@@ -1,0 +1,89 @@
+0.6-0
+
+  *   Identify direct cross-references in type definitions in schema and avoid circularities
+      in generation of R classes.
+
+0.5-0  (Extensive updates and changes.)
+
+  *   Compute namespaces in fromXML() to resolve namespace references.
+
+  *   Added exportClassDefs() which generates R code that will define the classes and coerce methods
+      for the classes we defined via defineClass() from the schema.
+
+  *   Defined gYear and gYearMonth.
+
+  *   Defined dateTime, time and date classes.
+      Moved SOAPDateTime, etc. to SOAPDateTimeType for representing the type descriptions, not the instances.
+
+  *   Generated functions now do not rely on their environment and so can be more readily serialized.
+      The values are inserted into the function either when they are created or when they are serialized.
+
+  *   Coercion functions for restricted types "compile" the computations at function creation time rather than
+      performing some of the tests at run-time.
+
+  *   Mechanism to identify types in a different SchemaTypes within a SchemaCollection 
+      which have the same names and so would map to the same R name.  We adjust these 
+      to have an Rname that maps to a different R class name so that they will be unique.
+
+  *   Improved version of top-level code to read schema so that we collect schema nodes into 
+      a SchemaCollection regardless of depth of nesting.
+
+  *   Improved, removed and simplified some special cases in processSchemaType().
+
+  *   The approach still cannot handle definitions that involve cross-references in <choice> nodes
+      that are recursive.  See EPO/ops.wsdl 
+
+0.4-0  (Extensive updates and changes.)
+
+  *   Restriction for hexBinary, string, integers and doubles.
+
+  *   Introduced a class CodeGenOpts to provide controls/options for parameterizing the code that generates
+      the R classes from the schema types.  Currently, this controls whether we create a prototype
+      which is curently only used to initialize string types with "". 
+
+  *   Major change to introduce LocalElements and preserve the information about these Elements
+      that enclose content and types.
+
+  *   Base64Encoded string class and coercion methods to coerce to character and raw.
+
+  *   Many changes to the processSchemaType() function and helpers to handle different schema types.
+
+  *   readSchema() has an asNode parameter that controls whether we treat the input 
+      as a schema node or go find it in the document by coercing the node to the root node of the
+      document as we have done for WSDLs. The default should suffice.
+
+0.3-0
+
+  *   Introduced SOAPGroupType and SOAPGroupRefType for representing groups.
+      Currently we don't do "much" with them.
+
+  *   Handle the case where we have a Choice in a sequence.
+
+  *   Support for an extension to a type where the extension is a sequence/list.
+
+  *   Introduction of AnySimpleType to correspond to anySimpleType in the XML schema specification.
+
+  *   Get the element type of a SimpleSequenceType via processSchemaType() rather than just creating a SOAPType locally.
+
+0.2-0
+ 
+  *   Significant work to handle more types.
+
+0.1-6
+
+  *   Handle when the types are defined directly in a WSDL rather than in a schema node.
+
+  *   Compute the elementFormQualified via a generic function which handles different 
+      arrangments of the types.
+
+  *   General fixes motivated by the brenda.wsdl document
+
+  *   Simple fixes for omissions in processRestriction() and processExtension()
+
+0.1-2
+
+  *   Added support for elementFormQualified in the schema.
+
+0.1-1
+
+  *   Added methods for fromXML when there is no type and for NULL.

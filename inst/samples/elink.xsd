@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema 
+    targetNamespace="http://www.ncbi.nlm.nih.gov/soap/eutils/elink" 
+    xmlns:tns="http://www.ncbi.nlm.nih.gov/soap/eutils/elink" 
+    xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+    elementFormDefault="qualified"
+>
+
+    <!--   version="2.0" -->
+    <!--   http://www.ncbi.nlm.nih.gov/entrez/query/DTD/eLink_020511.dtd  date: 02/18/2005 -->
+
+    <xs:element name="Attribute" type="xs:string"/>
+    <xs:element name="DbFrom" type="xs:string"/>
+    <xs:element name="DbTo" type="xs:string"/>
+    <xs:element name="ERROR" type="xs:string"/>
+    <xs:element name="IconUrl" type="xs:string"/>
+    <xs:element name="Info" type="xs:string"/>
+    <xs:element name="Name" type="xs:string"/>
+    <xs:element name="NameAbbr" type="xs:string"/>
+    <xs:element name="Score" type="xs:string"/>
+    <xs:element name="SubjectType" type="xs:string"/>
+    <xs:element name="Url" type="xs:string"/>
+    <xs:element name="MenuTag" type="xs:string"/>
+    <xs:complexType name="IdType">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="HasLinkOut">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:NMTOKEN">
+                            <xs:enumeration value="Y"/>
+                            <xs:enumeration value="N"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+                <xs:attribute name="HasNeighbor">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:NMTOKEN">
+                            <xs:enumeration value="Y"/>
+                            <xs:enumeration value="N"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="IdCheckListType">
+        <xs:sequence>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="Id" type="tns:IdType"/>
+                <xs:element name="IdLinkSet" type="tns:IdLinkSetType"/>
+            </xs:choice>
+            <xs:element ref="tns:ERROR" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="IdLinkSetType">
+        <xs:sequence>
+            <xs:element name="LinkInfo" type="tns:LinkInfoType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="IdListType">
+        <xs:sequence>
+            <xs:element name="Id" type="tns:IdType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="IdUrlListType">
+        <xs:sequence>
+            <xs:element name="IdUrlSet" type="tns:IdUrlSetType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element ref="tns:ERROR" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="IdUrlSetType">
+        <xs:sequence>
+            <xs:element name="Id" type="tns:IdType"/>
+            <xs:choice>
+                <xs:element name="ObjUrl" type="tns:ObjUrlType" maxOccurs="unbounded"/>
+                <xs:element ref="tns:Info"/>
+            </xs:choice>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="LinkType">
+        <xs:sequence>
+            <xs:element name="Id" type="tns:IdType"/>
+            <xs:element ref="tns:Score" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="LinkInfoType">
+        <xs:sequence>
+            <xs:element ref="tns:DbTo"/>
+            <xs:element name="LinkName" type="xs:string"/>
+            <xs:element ref="tns:MenuTag"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="LinkSetType">
+        <xs:sequence>
+            <xs:element ref="tns:DbFrom"/>
+            <xs:element ref="tns:ERROR" minOccurs="0"/>
+            <xs:element name="IdList" type="tns:IdListType" minOccurs="0"/>
+            <xs:element name="LinkSetDb" type="tns:LinkSetDbType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="IdUrlList" type="tns:IdUrlListType" minOccurs="0"/>
+            <xs:element name="IdCheckList" type="tns:IdCheckListType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+<!-- TOO complex for Axis2
+    <xs:complexType name="LinkSetDbType">
+        <xs:sequence>
+            <xs:element ref="tns:DbTo"/>
+            <xs:element ref="tns:LinkName"/>
+            <xs:choice>
+                <xs:element name="Link" type="tns:LinkType" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element ref="tns:Info"/>
+            </xs:choice>
+            <xs:element ref="tns:ERROR" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+-->
+    <xs:complexType name="LinkSetDbType">
+        <xs:sequence>
+            <xs:element ref="tns:DbTo"/>
+            <xs:element name="LinkName" type="xs:string" />
+            <xs:element name="Link" type="tns:LinkType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element ref="tns:Info" minOccurs="0"/>
+            <xs:element ref="tns:ERROR" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ObjUrlType">
+        <xs:sequence>
+            <xs:element ref="tns:Url"/>
+            <xs:element ref="tns:IconUrl" minOccurs="0"/>
+            <xs:element name="LinkName" type="xs:string" />
+            <xs:element ref="tns:SubjectType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element ref="tns:Attribute" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Provider" type="tns:ProviderType"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ProviderType">
+        <xs:sequence>
+            <xs:element ref="tns:Name"/>
+            <xs:element ref="tns:NameAbbr"/>
+            <xs:element name="Id" type="tns:IdType"/>
+            <xs:element ref="tns:Url"/>
+            <xs:element ref="tns:IconUrl" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="eLinkResult">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="tns:ERROR" minOccurs="0"/>
+                <xs:element name="LinkSet" type="tns:LinkSetType" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+	<!-- input params -->
+    <xs:element name="db" type="xs:string"/>
+    <xs:element name="id" type="xs:string" />
+    <xs:element name="reldate" type="xs:string"/>
+    <xs:element name="mindate" type="xs:string"/>
+    <xs:element name="maxdate" type="xs:string"/>
+    <xs:element name="datetype" type="xs:string"/>
+    <xs:element name="term" type="xs:string"/>
+    <xs:element name="dbfrom" type="xs:string"/>
+    <xs:element name="WebEnv" type="xs:string"/>
+    <xs:element name="query_key" type="xs:string"/>
+    <xs:element name="cmd" type="xs:string"/>
+    <xs:element name="tool" type="xs:string"/>
+    <xs:element name="email" type="xs:string"/>
+    <xs:element name="linkname" type="xs:string"/>
+   <xs:element name="eLinkRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="tns:db" minOccurs="0"/>
+                <xs:element ref="tns:id" minOccurs="0" maxOccurs="unbounded"/>
+				<xs:element ref="tns:reldate" minOccurs="0"/>
+                <xs:element ref="tns:mindate" minOccurs="0"/>
+                <xs:element ref="tns:maxdate" minOccurs="0"/>
+                <xs:element ref="tns:datetype" minOccurs="0"/>
+                <xs:element ref="tns:term" minOccurs="0"/>
+                <xs:element ref="tns:dbfrom" minOccurs="0"/>
+                <xs:element ref="tns:linkname" minOccurs="0"/>
+                <xs:element ref="tns:WebEnv" minOccurs="0"/>
+                <xs:element ref="tns:query_key" minOccurs="0"/>
+                <xs:element ref="tns:cmd" minOccurs="0"/>
+                <xs:element ref="tns:tool" minOccurs="0"/>
+                <xs:element ref="tns:email" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<article xmlns:r="http://www.r-project.org"
+         xmlns:xi="http://www.w3.org/2003/XInclude"
+	 xmlns:omg="http://www.omegahat.org">
+
+<articleinfo>
+
+<title></title>
+
+<author><firstname>Duncan</firstname><surname>Temple Lang</surname>
+  <affiliation><orgname>University of California at Davis</orgname>
+               <orgdiv>Department of Statistics</orgdiv>
+  </affiliation>
+</author>
+</articleinfo>
+
+<section>
+<title></title>
+
+<para>
+This is a retrospective and somewhat scattered, incomplete description 
+of what goes on in the <omg:pkg>XMLSchema</omg:pkg> package.
+This is mixed a little with the <omg:pkg>SSOAP</omg:pkg> package
+and how this uses the <omg:pkg>XMLSchema</omg:pkg> package.
+This is partly because the two packages were originally tightly coupled
+and also because the <omg:pkg>SSOAP</omg:pkg> package is the main
+package that uses <omg:pkg>XMLSchema</omg:pkg>.
+
+</para>
+<para>
+Within a schema, we have
+<invisible>
+
+<r:code><![CDATA[
+xsd = list.files("../XMLSchema/inst/samples", pattern = "xsd$", full.names = TRUE)
+xsdDocs = lapply(xsd, xmlParse)
+table(unlist(sapply(xsdDocs, function(x) names(xmlRoot(x)))))
+
+wsdls= list.files("SSOAP/WSDLs", pattern = "wsdl$", full.names = TRUE)
+wsdlDocs = lapply(wsdls, xmlParse)
+   # Why doesn't names just work as a regular function but needs function(x) names(x)
+table(unlist(sapply(wsdlDocs, function(doc) xpathApply(doc, "//s:schema", fun = function(x) names(x), namespaces = c(s="http://www.w3.org/2001/XMLSchema")))))
+
+  # within the top-level xsd elements, 
+ table(unlist(sapply(xsdDocs, function(x) xmlApply(xmlRoot(x), names))))
+]]>
+<r:output><![CDATA[
+[1] "all"            "annotation"     "attribute"      "attributeGroup" "choice"         "complexContent" "complexType"    "documentation" 
+[9] "list"           "restriction"    "sequence"       "simpleContent"  "union"         
+]]></r:output>
+</r:code>
+</invisible>
+
+ <xml:tag>element</xml:tag>,
+<xml:tag>complexType</xml:tag>,
+<xml:tag>simpleType</xml:tag>,
+<xml:tag>group</xml:tag>
+<xml:tag>annotation</xml:tag>
+<xml:tag>attributeGroup</xml:tag>
+and possibly <xml:tag>comment</xml:tag>.
+</para>
+
+<section>
+<title>sequence</title>
+<para>
+In cuahsi_1_0.asmx.wsdl,
+the third element in the schema is
+GetSitesXmlResponse.
+This is defined as
+
+<programlisting><![CDATA[
+      <s:element name="GetSitesXmlResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetSitesXmlResult" type="s:string"/>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+]]></programlisting>
+This means that we will end up with XML nodes in documents 
+of the form
+
+<programlisting><![CDATA[
+ <GetSitesXmlResponse><GetSitesXmlResult>value</GetSitesXmlResult></GetSitesXmlResponse>
+]]></programlisting>
+
+<q>Will this be within a <xml:tag>GetSitesXmlResponse</xml:tag>
+element or within another element that is defined.</q>
+
+
+This maps to an Element object in R.
+When defining the classes for the schema, we turn this
+into a new class named <r:class>GetSitesXmlResponse</r:class>.
+This complex type has a single element
+which is a sequence and contains either 0 or 1 instance of
+a GetSitesXmlResult
+The definition in this case should be 
+<!-- should this be "string" rather than GetSitesXmlResult. -->
+<r:code><![CDATA[
+setClassUnion("GetSitesXmlResponse", c("NULL", "GetSitesXmlResult"))
+]]></r:code>
+
+</para>
+</section>
+
+</section>
+</article>

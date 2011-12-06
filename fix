@@ -1,0 +1,110 @@
+In the context of XMCDA, 
+
+x<-readSchema("inst/samples/XMCDA-2.0.0.xsd", verbose=TRUE) 
+types = sapply(x, class)
+table(types)
+
+pmml = readSchema("inst/samples/pmml-4-0.xsd", followImports = FALSE, createConverter = FALSE)
+readSchema("XMLSchema/inst/samples/DailyValues.asmx?wsdl")
+-----------
+
+createConverter should be FALSE so we leave until we have all the classes.
+Or do it at the end of processSchemaTypes when we have all the class and types.
+
+?  Construct the SimpleElement types properly (see pmml)
+
+?  createConverter for SimpleElement (if we still need that type)
+        pmml: MatCell, ParameterField, Constant.
+
+?  parsing pmml-4-0.xsd.
+   [use createConverters = FALSE in readSchema()]
+      mapSOAPTypeToS() needs the classes to which we have already mapped the SOAP types.
+      Or the collection of schema.  This is like the DefinitionContainer() in RGCCTranslationUnit.
+!!! Temporarily removed the stop() if we don't match in mapSOAPTypeToS().
+
+        Question of when we create these classes. If we don't create the converters, we don't care at this point.
+        So perhaps wait until we generate code and then build the converters as we need them and when we have 
+        defined the R types.
+  
+    Anonymous EnumValueDefs:  currently put a name on them for mapSOAPTypeToS() to use as an R type.
+                              the name is the values separated by ',' 
+
+    RestrictedStringDefinition or whatever. 
+      Cannot use these as AttributeType objects in AttributeDef.
+      Ideally change this and processAttribute() to call processSchemaType.
+
+
+?  ArrayClassDefinition and converter.
+      Do we really want this class.
+
+?  UnionDefinition when 0 or more elements.
+   Fix this class and its instances, i.e. when we create it.
+      e.g. alternative and many more.
+      names(x)[sapply(x, is, "UnionDefinition")]
+        [1] "methodMessages"       "bibliography"         "methodParameters"     "alternatives"         "alternative"          "alternativeReference"
+        [7] "criterionReference"   "attributeReference"   "categoryReference"    "categoryProfile"     
+
+     Needs to be a Sequence Type and a restriction on the types.
+
+      cri attribute
+
+
+?  SOAPComplexType - <choice> elements has no name in @content. e.g. x$scale
+    to what slot would we set it. If they have names, we can set that. It is like
+    a union.
+    Alternatively, we have a single slot with a type that is the union of all the
+    different types. We can set the name of the object or a parallel slot to indicate
+    what we have.
+
+?  create class definitions for complex types with variable number of elements.
+      different converters too relative to  fixed set with optional elements.
+
+?  SOAPVoidType arising in unexpected places.
+
+
+[DailyValues.asmx?wsdl]
+
+?  units
+      <s:element name="units">
+        <s:complexType>
+          <s:simpleContent>
+            <s:extension base="s:string">
+              <s:attributeGroup ref="s1:unitsAttr" />
+            </s:extension>
+          </s:simpleContent>
+        </s:complexType>
+      </s:element>
+   Should map to a ClassDefinition extending String
+    with attributes so we know where to find them, i.e. 
+    when creating the converter function.
+   Currently a SimpleElement and we can map that too.
+
+
+?  For type slot, should we have a XMLToken type class, etc.
+   and use these to represent a token, etc. rather than just a string with a name.
+    If so, change defn of SimpleElement to expect type to be a SOAPType.
+     This class defn. is in processSchemaTypes.R
+
+?  UnionDefinition (DocumentationEnumTypes)
+   
+
+------------------
+
+[Done]  Element - e.g. top-level XMCDA not a type.
+      not needed until we reference it?
+      Does appear in reading other schema.
+
+
+[Done]  string enums (currently where types == "character")
+          Do use RestrictedStringDefinition for <simpleType><restriction base="xsi:string">
+          (<annotation> getting in the way.)
+
+[Done] Get documentation field.
+     In SOAPType as @documentation
+
+
+[Done] conversion of attributes which are not character, e.g. integer.
+       see XMCDA-2.0.0-modified.xsd and x$scale conversion function - 
+         x$scale@fromConverter
+       Should be an integer.  XMLSchema:::mapSOAPTypeToS("xsi:int") works.
+

@@ -1,0 +1,73 @@
+import(XML)
+importFrom(RCurl, base64Encode)
+import(codetools)
+
+exportClass(VirtualXMLSchemaClass)
+
+
+# Should go back to SSOAP or be renamed.
+exportClass(SOAPType)
+exportClasses("SOAPTypeReference", "BasicSOAPType", "SOAPVoidType")
+
+exportClasses(StringEnum)
+
+export(SOAPType)
+export(as.SOAPDateTime, as.SOAPDate)
+exportClass(ID, NCName)
+exportClasses(gYear, gYearMonth)
+exportClasses(dateTime, time, date)
+#exportClasses("SOAPDateTime", "SOAPDate")
+
+
+# Back to SOAP now.
+# export(WSDLParseHandlers)
+
+export(readSchema,
+       parseSchemaDoc,
+       processSchemaTypes,
+       processSchemaType)
+
+export(XMLSchemaTypes)
+
+
+export(fromXML)
+exportMethods(fromXML)
+
+exportClass(positiveInteger, NMTOKEN, normalizedCharacter)
+
+# 
+export(defineClasses)
+
+export(resolve)
+exportMethods(resolve)
+
+export(coerceArgumentCode)
+
+
+
+# Used in SSOAP
+
+export(discardNamespace)
+export(convertToSName)
+export(simple.dQuote)
+
+
+export(createSOAPConverter)
+exportMethods(createSOAPConverter)
+
+
+export(coerceListToS4)
+exportMethods(coerce)
+
+export(mapSOAPTypeToS)
+
+
+exportClasses(SchemaCollection, SchemaTypes)
+
+
+exportClasses(nonNegativeInteger)
+
+export(expandS4, writeClassDef)  # , discardEnvironment)
+exportMethods(expandS4)
+export(exportClassDefs, exportClassDef)
+

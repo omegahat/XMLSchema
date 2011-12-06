@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title></title><link rel="stylesheet" type="text/css" href="/Users/duncan/Classes/StatComputing/XDynDocs/inst/CSS/OmegaTech.css"></link><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"></meta><script xmlns="" type="text/javascript" src="http://www.omegahat.org/DynDocs/JavaScript/toggleHidden.js"></script>
+</head><body class="yui-skin-sam">
+<script xmlns="" type="text/javascript"><!--
+var toggleCodeIds = [
+ 
+   "idp6487456", 
+   "idp6496176"
+];
+--></script><p xmlns=""></p>
+<div class="article"><div class="titlepage"><div><div><h2 class="title"><a id="idp19392"></a></h2></div><div><div class="author"><h3 class="author"><span class="firstname">Duncan</span> <span class="surname">Temple Lang</span></h3><div class="affiliation"><span class="orgname">University of California at Davis<br></br></span> <span class="orgdiv">Department of Statistics<br></br></span></div></div></div></div><hr></hr></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp6484016"></a></h2></div></div></div><p>
+This is a retrospective and somewhat scattered, incomplete description 
+of what goes on in the <a xmlns="" href="http://www.omegahat.org/XMLSchema">XMLSchema</a> package.
+This is mixed a little with the <a xmlns="" href="http://www.omegahat.org/SSOAP">SSOAP</a> package
+and how this uses the <a xmlns="" href="http://www.omegahat.org/XMLSchema">XMLSchema</a> package.
+This is partly because the two packages were originally tightly coupled
+and also because the <a xmlns="" href="http://www.omegahat.org/SSOAP">SSOAP</a> package is the main
+package that uses <a xmlns="" href="http://www.omegahat.org/XMLSchema">XMLSchema</a>.
+
+</p><p>
+Within a schema, we have
+
+
+ <code xmlns="" class="xmlTag">&lt;element&gt;</code>,
+<code xmlns="" class="xmlTag">&lt;complexType&gt;</code>,
+<code xmlns="" class="xmlTag">&lt;simpleType&gt;</code>,
+<code xmlns="" class="xmlTag">&lt;group&gt;</code>
+<code xmlns="" class="xmlTag">&lt;annotation&gt;</code>
+<code xmlns="" class="xmlTag">&lt;attributeGroup&gt;</code>
+and possibly <code xmlns="" class="xmlTag">&lt;comment&gt;</code>.
+</p><div class="section" title="sequence"><div class="titlepage"><div><div><h3 class="title"><a id="idp6492064"></a>sequence</h3></div></div></div><p>
+In cuahsi_1_0.asmx.wsdl,
+the third element in the schema is
+GetSitesXmlResponse.
+This is defined as
+
+</p><pre class="programlisting">
+      &lt;s:element name="GetSitesXmlResponse"&gt;
+        &lt;s:complexType&gt;
+          &lt;s:sequence&gt;
+            &lt;s:element minOccurs="0" maxOccurs="1" name="GetSitesXmlResult" type="s:string"/&gt;
+          &lt;/s:sequence&gt;
+        &lt;/s:complexType&gt;
+      &lt;/s:element&gt;
+</pre><p>
+This means that we will end up with XML nodes in documents 
+of the form
+
+</p><pre class="programlisting">
+ &lt;GetSitesXmlResponse&gt;&lt;GetSitesXmlResult&gt;value&lt;/GetSitesXmlResult&gt;&lt;/GetSitesXmlResponse&gt;
+</pre><p>
+
+<span style="color: red">&lt;q&gt;Will this be within a <code xmlns="" class="xmlTag">&lt;GetSitesXmlResponse&gt;</code>
+element or within another element that is defined.&lt;/q&gt;</span>
+
+
+This maps to an Element object in R.
+When defining the classes for the schema, we turn this
+into a new class named <i xmlns=""><a href="Help/GetSitesXmlResponse-class.html">GetSitesXmlResponse</a></i>.
+This complex type has a single element
+which is a sequence and contains either 0 or 1 instance of
+a GetSitesXmlResult
+The definition in this case should be 
+
+</p><div xmlns="" class="codeToggle"><div class="unhidden" id="idp6496176"><div><pre class="rcode" title="R code">
+setClassUnion("GetSitesXmlResponse", c("NULL", "GetSitesXmlResult"))
+</pre></div></div></div>
+<div xmlns="" class="clearFloat"></div>
+<p>
+
+</p></div></div></div></body></html>

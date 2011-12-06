@@ -1,0 +1,26 @@
+<article>
+<para>
+substitutionGroup
+</para>
+<para>
+simple elements with a type
+
+<r:code>
+ # From the warnings from read
+k = readSchema("kml21.xsd")
+x = warnings()
+w = gsub(".* ", "", grep("SimpleElement", names(x), val = TRUE))
+
+simpleEls = getNodeSet(doc, "/*/x:element[@name and @type]", "x")
+types = gsub("^kml:", "", sapply(simpleEls, xmlGetAttr, "name"))
+length(intersect(w, types)) == length(types)
+
+types = gsub("^kml:", "", sapply(simpleEls, xmlGetAttr, "type"))
+names(k)
+</r:code>
+</para>
+<para>
+Where does ObjectType go when we read the schema with 
+readSchema.
+</para>
+</article>

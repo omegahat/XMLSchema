@@ -1,0 +1,390 @@
+<?xml version="1.0"?>
+<article xmlns:r="http://www.r-project.org"
+         xmlns:xi="http://www.w3.org/2003/XInclude">
+
+<articleinfo>
+
+<title></title>
+
+<author><firstname>Duncan</firstname><surname>Temple Lang</surname>
+  <affiliation><orgname>University of California at Davis</orgname>
+               <orgdiv>Department of Statistics</orgdiv>
+  </affiliation>
+</author>
+</articleinfo>
+
+<section>
+<title></title>
+
+<para>
+The idea of this document is to present some discussion of how the different
+types in an XML schema are mapped to R data types.
+This is not necessarily complete and nor is the code. Instead,
+we have adapted the code and the documentation to deal with 
+schema we have encountered, most typically in the context
+of SOAP and WSDLs.
+</para>
+
+
+<para>
+At the very top-level, we are reading one or more 
+XML schema into R.
+The idea is to map the content of the XML schema documents to 
+R objects that represent the data types in those schema.
+</para>
+
+
+<para>
+Let's start with the eutils.wsdl WSDL from the Entrez NCBI Web Service.
+<r:code>
+library(XMLSchema)
+library(XML)
+doc = xmlParse("WSDLs/eutils.wsdl")
+sc = getNodeSet(doc, "//xs:schema", c(xs="http://www.w3.org/2001/XMLSchema"))
+names(sc) = sapply(sc, xmlGetAttr, "targetNamespace")
+</r:code>
+We end up with 7 <xml:tag>schema</xml:tag> nodes.
+We can read each one 
+<r:code>
+schema = lapply(sc, readSchema)
+</r:code>
+(We could ensure that the nodes are read directly as schema nodes with
+<r:expr>asNode = TRUE</r:expr> in the calls to <r:func>readSchema</r:func>)
+Each element in our list is an instance of the class
+<r:class>SchemaCollection</r:class>.
+We assemble the 7 of these into a <r:class>SchemaCollection</r:class>:
+<r:code>
+s = new("SchemaCollection", schema)
+</r:code>
+</para>
+<para>
+Let's examine the class of the types in all of the schema.
+<r:code>
+ table(sapply(unlist(s, recursive = FALSE), class))
+<r:output><![CDATA[
+   ClassDefinition            Element               NULL 
+                25                103                 26 
+SimpleSequenceType    UnionDefinition 
+                 8                  1 
+]]></r:output>
+</r:code>
+</para>
+<para>
+Let's look at the ClassDefinition elements:
+<r:code>
+allDefs = unlist(s, recursive = FALSE)
+names(allDefs)[sapply(allDefs, is, "ClassDefinition")]
+</r:code>
+These correspond to explicit <xml:tag>complexType</xml:tag> nodes
+in the XML document defining the schema.
+<r:test>
+ids = names(allDefs)[sapply(allDefs, is, "ClassDefinition")]
+nn = lapply(ids, function(x) getNodeSet(doc, sprintf("//xs:complexType[@name='%s']", x), c("xs" = "http://www.w3.org/2001/XMLSchema" )))
+all(sapply(nn, length) > 0)
+</r:test>
+</para>
+<para>
+If we look at <r:var>ids</r:var>  we see 
+there are some duplicates and this corresponds to names that have two definitions for the same class name.
+The one in this case is named LinkType and it has two different definitions:
+<r:code>
+names(nn) = ids
+nn[["LinkType"]]
+<r:output><![CDATA[
+[[1]]
+<xs:complexType name="LinkType">
+  <xs:sequence>
+    <xs:element name="Name" type="xs:string"/>
+    <xs:element name="Menu" type="xs:string"/>
+    <xs:element name="Description" type="xs:string"/>
+    <xs:element name="DbTo" type="xs:string"/>
+  </xs:sequence>
+</xs:complexType> 
+
+[[2]]
+<xs:complexType name="LinkType">
+  <xs:sequence>
+    <xs:element name="Id" type="tns:IdType"/>
+    <xs:element ref="tns:Score" minOccurs="0"/>
+  </xs:sequence>
+</xs:complexType> 
+]]></r:output>
+</r:code>
+If we explore this further, we will find that 
+these are defined in different schema:
+<r:code>
+sapply(sapply(nn[["LinkType"]], xmlParent), xmlGetAttr, "targetNamespace")
+<r:output><![CDATA[
+[1] "http://www.ncbi.nlm.nih.gov/soap/eutils/einfo"
+[2] "http://www.ncbi.nlm.nih.gov/soap/eutils/elink"
+]]></r:output>
+</r:code>
+In this regard, there is no conflict; each is referenced locally and with ambiguity within its
+own schema.  We on the other hand have to be careful to do the same and not
+define a global class.
+
+</para>
+<para>
+Let's exampine each of these <xml:tag>complexType</xml:tag> nodes 
+corresponding to the different class definitions:
+<r:code>
+ids = unique(names(allDefs)[sapply(allDefs, is, "ClassDefinition")])
+nn = lapply(ids, function(x) getNodeSet(doc, sprintf("//xs:complexType[@name='%s']", x), c("xs" = "http://www.w3.org/2001/XMLSchema" )))
+nn = unlist(nn, recursive = FALSE)
+</r:code>
+(We end up with one more than there are elements in <r:var>ids</r:var> since we have two nodes for LinkType).
+</para>
+<para>
+Most of these nodes have just one child:
+<r:code>
+sapply(nn, xmlSize)
+<r:output><![CDATA[
+[1] 1 1 1 1 1 1 1 1 1 1 1 1 3 1 1 1 1 1 1 1 1 1 1 1 1
+]]></r:output>
+</r:code>
+We can look at the names with
+<r:code>
+sapply(nn, names)
+</r:code>
+or look at their counts with
+<r:code>
+table(unlist(sapply(nn, names)))
+<r:output><![CDATA[
+    attribute        choice      sequence simpleContent 
+            2             1            21             3 
+]]></r:output>
+</r:code>
+Most are made up of  a single <xml:tag>sequence</xml:tag> node
+such as the node defining IdUrlSetType:
+<xml:code><![CDATA[
+ <xs:complexType name="IdUrlSetType">
+    <xs:sequence>
+      <xs:element name="Id" type="tns:IdType"/>
+        <xs:choice>
+	    <xs:element name="ObjUrl" type="tns:ObjUrlType" maxOccurs="unbounded"/>
+	    <xs:element ref="tns:Info"/>
+        </xs:choice>
+    </xs:sequence>
+ </xs:complexType>
+]]></xml:code>
+This gives rise to an ordered collection
+of an Id element an then either a 1 or more ObjUrl elements or an element defined by tns:Info.
+</para>
+<para>
+The node that has 3 children is for ItemType:
+<xml:code><![CDATA[
+<xs:complexType name="ItemType">
+  <xs:sequence>
+    <xs:element name="Item" type="tns:ItemType" minOccurs="0" maxOccurs="unbounded"/>
+    <xs:element name="ItemContent" type="xs:string" minOccurs="0" maxOccurs="1"/>
+  </xs:sequence>
+  <xs:attribute name="Name" type="xs:string" use="required"/>
+  <xs:attribute name="Type" use="required">
+    <xs:simpleType>
+      <xs:restriction base="xs:NMTOKEN">
+        <xs:enumeration value="Integer"/>
+        <xs:enumeration value="Date"/>
+        <xs:enumeration value="String"/>
+        <xs:enumeration value="Structure"/>
+        <xs:enumeration value="List"/>
+        <xs:enumeration value="Flags"/>
+        <xs:enumeration value="Qualifier"/>
+        <xs:enumeration value="Enumerator"/>
+        <xs:enumeration value="Unknown"/>
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType> 
+]]>
+</xml:code>
+We see that this has a sequence and then two attributes.
+
+</para>
+<para>
+
+The <r:null/> values are a little perplexing.
+</para>
+
+
+
+</section>
+<section>
+<title>XMCDA Schema</title>
+
+<para>
+We'll focus on the XMCDA-2.0.0 schema initially.
+<r:code>
+x = readSchema("inst/samples/XMCDA-2.0.0.xsd")
+types = sapply(x, class)
+</r:code>
+
+Currently, the methodMessages complexType has a singe choice
+element and an attributeGroup reference.
+The choice has a min and max occurs of 0 and Inf/unbounded. So we can have a list
+of these elements.  If they are compatible atomic types, e.g. strings, integers, etc.
+we could use a vector to hold them. Otherwise, we can use a list.
+We can have slots for the attributes. We want the attributes to be considered separately
+so we can convert non-strings values (e.g. integers, dates, dates and times) and maintain them in their natural type
+</para>
+<para>
+<r:func>readSchema</r:func> converts this to a UnionDefinition. (Not certain why at this point.)
+</para>
+
+
+<para>
+The bibliography type is very similar as are all of the UnionDefinition objects for this schema.
+They have an annotation node, a choice, and some have an attributeGroup.
+<r:code>
+doc = xmlParse("inst/samples/XMCDA-2.0.0.xsd")
+nodes = sapply(names(x)[types == "UnionDefinition"], function(x) getNodeSet(doc, sprintf("//xs:complexType[@name='%s']", x, "xs")))
+sapply(nodes, names)
+</r:code>
+
+What is the count for each of these
+<r:code>
+sapply(x[types == "UnionDefinition"], function(x) x@slotTypes[[1]]@count)
+</r:code>
+</para>
+
+</section>
+<section>
+<title>ArrayClassDefinition</title>
+
+<para>
+Both message and rankedLabel are represented as ArrayClassDefinition.
+message has an all and an attributeGroup.
+rankedLabel has just an all.
+This maps directly to a regular ClassDefinition, with possibly omitted
+values for some slots.
+</para>
+
+</section>
+<section>
+<title>character</title>
+<para>
+ "preferenceDirection" "alternativeType"     "valuationType"       "status"    
+are all of type character. These are enumerated string constants, e.g.
+active and inactive for status; standard and bipolar for valuationType.
+These are restrictions of xs:string.
+</para>
+<para>
+The definition does need to include the possible values, 
+counts, etc. So we need a StringEnum type.
+</para>
+</section>
+
+<section>
+<title>ExtendedClassDefinition</title>
+
+<para>
+There is but one of these: projectReference.
+This is a complexType and has a single node which is a complexContent.
+<programlisting><![CDATA[
+    <xs:complexContent>
+	<xs:extension base='xmcda:description'>
+		<xs:attributeGroup ref="xmcda:defaultAttributes"/>
+	</xs:extension>
+    </xs:complexContent>
+]]></programlisting>
+</para>
+<para>
+What does this actually mean in terms of what can appear.
+Where is the base xmcda:description defined.
+Appears to be just adding the attributes to the xmcda:description element.
+</para>
+</section>
+
+<section>
+<title></title>
+
+<para>
+SimpleSequenceType,  Element
+</para>
+</section>
+
+
+<section>
+<title>SimpleLement</title>
+
+<para>
+From pmml
+
+<programlisting><![CDATA[
+  <xs:element name="MatCell">
+    <xs:complexType >
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute name="row" type="INT-NUMBER" use="required" />
+          <xs:attribute name="col" type="INT-NUMBER" use="required" />
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+]]></programlisting>
+
+So this means we have a MatCell element with  string content
+and 2 attributes - row and col.
+
+</para>
+<para>
+ParameterFied  has no simpleContent and just adds attributes.
+<programlisting><![CDATA[
+  <xs:element name="ParameterField">
+    <xs:complexType>
+      <xs:attribute name="name" type="xs:string" use="required" />
+      <xs:attribute name="optype" type="OPTYPE" />
+      <xs:attribute name="dataType" type="DATATYPE" />
+    </xs:complexType>
+  </xs:element>
+]]></programlisting>
+
+</para>
+
+
+<para>
+Level just adds attributes.
+Trend adds attributes but puts a restriction on the type
+to be a NMTOKEN with an enumerated value.
+</para>
+
+
+<para>
+ClusteringModel is different.
+<programlisting><![CDATA[
+  <xs:element name="ClusteringModel">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Extension" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="MiningSchema"/>
+        <xs:element ref="Output" minOccurs="0" />
+        <xs:element ref="ModelStats" minOccurs="0"/>
+        <xs:element ref="ModelExplanation" minOccurs="0"/>
+        <xs:element ref="LocalTransformations" minOccurs="0" />
+        <xs:element ref="ComparisonMeasure"/>
+        <xs:element ref="ClusteringField" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="MissingValueWeights" minOccurs="0"/>
+        <xs:element ref="Cluster" maxOccurs="unbounded"/>
+        <xs:element ref="ModelVerification" minOccurs="0"/>
+        <xs:element ref="Extension" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="modelName" type="xs:string" use="optional"/>
+      <xs:attribute name="functionName" type="MINING-FUNCTION" use="required" />
+      <xs:attribute name="algorithmName" type="xs:string" use="optional"/>
+      <xs:attribute name="modelClass" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="centerBased"/>
+            <xs:enumeration value="distributionBased"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="numberOfClusters" type="INT-NUMBER" use="required"/>
+    </xs:complexType>
+  </xs:element>
+]]></programlisting>
+
+</para>
+
+</section>
+
+</article>

@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title></title><link rel="stylesheet" type="text/css" href="/Users/duncan/Classes/StatComputing/XDynDocs/inst/CSS/OmegaTech.css"></link><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"></meta><script xmlns="" type="text/javascript" src="http://www.omegahat.org/DynDocs/JavaScript/toggleHidden.js"></script>
+</head><body class="yui-skin-sam">
+<script xmlns="" type="text/javascript"><!--
+var toggleCodeIds = [
+ 
+   "idp6485312", 
+   "idp6487584", 
+   "idp6488176"
+];
+--></script><p xmlns=""></p>
+<div class="article"><div class="titlepage"><div><div><h2 class="title"><a id="idp19392"></a></h2></div><div><div class="author"><h3 class="author"><span class="firstname">Duncan</span> <span class="surname">Temple Lang</span></h3><div class="affiliation"><span class="orgname">University of California at Davis<br></br></span> <span class="orgdiv">Department of Statistics<br></br></span></div></div></div></div><hr></hr></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp6484016"></a></h2></div></div></div><p>
+The idea of this document is to present some discussion of how the different
+types in an XML schema are mapped to R data types.
+</p><p>
+We'll focus on the XMCDA-2.0.0 schema initially.
+</p><div xmlns="" class="codeToggle"><div class="unhidden" id="idp6485312"><div><pre class="rcode" title="R code">
+x = readSchema("inst/samples/XMCDA-2.0.0.xsd")
+types = sapply(x, class)
+</pre></div></div></div>
+<div xmlns="" class="clearFloat"></div>
+<p>
+
+Currently, the methodMessages complexType has a singe choice
+element and an attributeGroup reference.
+The choice has a min and max occurs of 0 and Inf/unbounded. So we can have a list
+of these elements.  If they are compatible atomic types, e.g. strings, integers, etc.
+we could use a vector to hold them. Otherwise, we can use a list.
+We can have slots for the attributes. We want the attributes to be considered separately
+so we can convert non-strings values (e.g. integers, dates, dates and times) and maintain them in their natural type
+</p><p>
+<i xmlns="" class="rfunc"><a href="Help//readSchema.html" title="">readSchema()</a></i> converts this to a UnionDefinition. (Not certain why at this point.)
+</p><p>
+The bibliography type is very similar as are all of the UnionDefinition objects for this schema.
+They have an annotation node, a choice, and some have an attributeGroup.
+</p><div xmlns="" class="codeToggle"><div class="unhidden" id="idp6487584"><div><pre class="rcode" title="R code">
+doc = xmlParse("inst/samples/XMCDA-2.0.0.xsd")
+nodes = sapply(names(x)[types == "UnionDefinition"], function(x) getNodeSet(doc, sprintf("//xs:complexType[@name='%s']", x, "xs")))
+sapply(nodes, names)
+</pre></div></div></div>
+<div xmlns="" class="clearFloat"></div>
+<p>
+
+What is the count for each of these
+</p><div xmlns="" class="codeToggle"><div class="unhidden" id="idp6488176"><div><pre class="rcode" title="R code">
+sapply(x[types == "UnionDefinition"], function(x) x@slotTypes[[1]]@count)
+</pre></div></div></div>
+<div xmlns="" class="clearFloat"></div>
+<p>
+</p></div><div class="section" title="ArrayClassDefinition"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp6488816"></a>ArrayClassDefinition</h2></div></div></div><p>
+Both message and rankedLabel are represented as ArrayClassDefinition.
+message has an all and an attributeGroup.
+rankedLabel has just an all.
+This maps directly to a regular ClassDefinition, with possibly omitted
+values for some slots.
+</p></div><div class="section" title="character"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp6490208"></a>character</h2></div></div></div><p>
+ "preferenceDirection" "alternativeType"     "valuationType"       "status"    
+are all of type character. These are enumerated string constants, e.g.
+active and inactive for status; standard and bipolar for valuationType.
+These are restrictions of xs:string.
+</p><p>
+The definition does need to include the possible values, 
+counts, etc. So we need a StringEnum type.
+</p></div><div class="section" title="ExtendedClassDefinition"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp6492128"></a>ExtendedClassDefinition</h2></div></div></div><p>
+There is but one of these: projectReference.
+This is a complexType and has a single node which is a complexContent.
+</p><pre class="programlisting">
+    &lt;xs:complexContent&gt;
+	&lt;xs:extension base='xmcda:description'&gt;
+		&lt;xs:attributeGroup ref="xmcda:defaultAttributes"/&gt;
+	&lt;/xs:extension&gt;
+    &lt;/xs:complexContent&gt;
+</pre><p>
+</p><p>
+What does this actually mean in terms of what can appear.
+Where is the base xmcda:description defined.
+Appears to be just adding the attributes to the xmcda:description element.
+</p></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp6494576"></a></h2></div></div></div><p>
+SimpleSequenceType,  Element
+</p></div><div class="section" title="SimpleLement"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp6495600"></a>SimpleLement</h2></div></div></div><p>
+From pmml
+
+</p><pre class="programlisting">
+  &lt;xs:element name="MatCell"&gt;
+    &lt;xs:complexType &gt;
+      &lt;xs:simpleContent&gt;
+        &lt;xs:extension base="xs:string"&gt;
+          &lt;xs:attribute name="row" type="INT-NUMBER" use="required" /&gt;
+          &lt;xs:attribute name="col" type="INT-NUMBER" use="required" /&gt;
+        &lt;/xs:extension&gt;
+      &lt;/xs:simpleContent&gt;
+    &lt;/xs:complexType&gt;
+  &lt;/xs:element&gt;
+</pre><p>
+
+So this means we have a MatCell element with  string content
+and 2 attributes - row and col.
+
+</p><p>
+ParameterFied  has no simpleContent and just adds attributes.
+</p><pre class="programlisting">
+  &lt;xs:element name="ParameterField"&gt;
+    &lt;xs:complexType&gt;
+      &lt;xs:attribute name="name" type="xs:string" use="required" /&gt;
+      &lt;xs:attribute name="optype" type="OPTYPE" /&gt;
+      &lt;xs:attribute name="dataType" type="DATATYPE" /&gt;
+    &lt;/xs:complexType&gt;
+  &lt;/xs:element&gt;
+</pre><p>
+
+</p><p>
+Level just adds attributes.
+Trend adds attributes but puts a restriction on the type
+to be a NMTOKEN with an enumerated value.
+</p><p>
+ClusteringModel is different.
+</p><pre class="programlisting">
+  &lt;xs:element name="ClusteringModel"&gt;
+    &lt;xs:complexType&gt;
+      &lt;xs:sequence&gt;
+        &lt;xs:element ref="Extension" minOccurs="0" maxOccurs="unbounded"/&gt;
+        &lt;xs:element ref="MiningSchema"/&gt;
+        &lt;xs:element ref="Output" minOccurs="0" /&gt;
+        &lt;xs:element ref="ModelStats" minOccurs="0"/&gt;
+        &lt;xs:element ref="ModelExplanation" minOccurs="0"/&gt;
+        &lt;xs:element ref="LocalTransformations" minOccurs="0" /&gt;
+        &lt;xs:element ref="ComparisonMeasure"/&gt;
+        &lt;xs:element ref="ClusteringField" minOccurs="0" maxOccurs="unbounded"/&gt;
+        &lt;xs:element ref="MissingValueWeights" minOccurs="0"/&gt;
+        &lt;xs:element ref="Cluster" maxOccurs="unbounded"/&gt;
+        &lt;xs:element ref="ModelVerification" minOccurs="0"/&gt;
+        &lt;xs:element ref="Extension" minOccurs="0" maxOccurs="unbounded"/&gt;
+      &lt;/xs:sequence&gt;
+      &lt;xs:attribute name="modelName" type="xs:string" use="optional"/&gt;
+      &lt;xs:attribute name="functionName" type="MINING-FUNCTION" use="required" /&gt;
+      &lt;xs:attribute name="algorithmName" type="xs:string" use="optional"/&gt;
+      &lt;xs:attribute name="modelClass" use="required"&gt;
+        &lt;xs:simpleType&gt;
+          &lt;xs:restriction base="xs:string"&gt;
+            &lt;xs:enumeration value="centerBased"/&gt;
+            &lt;xs:enumeration value="distributionBased"/&gt;
+          &lt;/xs:restriction&gt;
+        &lt;/xs:simpleType&gt;
+      &lt;/xs:attribute&gt;
+      &lt;xs:attribute name="numberOfClusters" type="INT-NUMBER" use="required"/&gt;
+    &lt;/xs:complexType&gt;
+  &lt;/xs:element&gt;
+</pre><p>
+
+</p></div></div></body></html>

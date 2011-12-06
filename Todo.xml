@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<?xml-stylesheet type="text/xsl" href="../../Docs/XSL/Todo.xsl" ?> 
+
+<topics xmlns:r="http://www.r-project.org">
+<title>XMLSchema</title>
+<topic>
+<title>Schema</title>
+<items>
+
+<item>
+read the elementFormDefault attribute on the schema and store it on the SchemaTypes.
+</item>
+
+<item>
+restrictions. Extension element in pmml. Handle the attributes and the sequence in 
+<![CDATA[
+    <xs:complexContent mixed="true">
+      <xs:restriction base="xs:anyType">
+        <xs:sequence>
+          <xs:any processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="extender" type="xs:string" use="optional"/>
+        <xs:attribute name="name" type="xs:string" use="optional"/>
+        <xs:attribute name="value" type="xs:string" use="optional"/>
+      </xs:restriction>
+    </xs:complexContent>
+]]>
+<r:code>
+readSchema("inst/samples/pmml-4-0.xsd", createConverters = FALSE)
+</r:code>
+
+</item>
+
+<item>
+Avoid overwriting elements with the same name but different types,
+i.e. an element and complexType.
+See biblio.xsd in inst/samples.
+</item>
+
+<item>
+defClass() for SOAPComplexType
+<br/>
+Probably should convert the SOAPComplexType into a  ClassDefinition
+in processWSDL() rather than working with it in genSOAPClientInterface().
+</item>
+
+<item>
+fromConverter for SOAPComplexType, and ArrayClassDefinition (actually for parent class CompositeTypeDefinition).
+<br/>
+createSOAPConverter() method. 
+</item>
+
+<item>
+cuahsi_1_0.asmx.wsdl has 
+<![CDATA[
+              <s:element minOccurs="0" maxOccurs="1" name="timeZoneInfo">
+                <s:complexType>
+                  <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="defaultTimeZone" nillable="true">
+                      <s:complexType>
+                        <s:attribute name="ZoneAbbreviation" type="s:normalizedString"/>
+                        <s:attribute name="ZoneOffset" type="s:string"/>
+                      </s:complexType>
+                    </s:element>
+                    <s:element minOccurs="1" maxOccurs="1" name="daylightSavingsTimeZone" nillable="true">
+                      <s:complexType>
+                        <s:attribute name="ZoneAbbreviation" type="s:normalizedString"/>
+                        <s:attribute name="ZoneOffset" type="s:string"/>
+                      </s:complexType>
+                    </s:element>
+                  </s:sequence>
+                </s:complexType>
+              </s:element>
+]]>
+in <![CDATA[ <s:complexType name="SiteInfoType">]]>
+and the sub-definitions come out as SOAPVoidType
+</item>
+
+<item status="done">
+Where does ObjectType go in readSchema() for KML.
+</item>
+
+<item>
+substitutionGroup's
+<br/>
+Include the hierarchy in the class hierarchy.
+Or at least when defining 
+</item>
+
+<item>
+w = readSchema("../../SOAP/WSDLs/2007-01-19.ec2.wsdl")
+Warning message:
+In processSchemaType(el) :
+  Failed to handle node EmptyElementType of type complexType & text in processSchemaType. <xs:complexType name="EmptyElementType">
+		  </xs:complexType>ProcessWSDLTypeError
+> 
+</item>
+
+<item>
+Handle the case where we have a simple element which has a reference to a type
+and where do we put the attributes and definition of that type.
+</item>
+
+<item>
+When following references to a type definition in the schema,
+we are stripping away namespace prefixes in the "new" code.
+Check for this more carefully, i.e. do two searches - without
+and with the namespace prefix.
+<br/>
+See processSchemaType() and the two code segments for the conditions
+<![CDATA[  xmlName(type) == "element" && !is.na(xmlGetAttr(type, "type", NA)) && xmlSize(type) == 0 ]]>
+
+and
+<![CDATA[ if(xmlName(type) == 'complexType' && (xmlSize(type) == 1 && names(type) == "attributeGroup"))  ]]>
+<br/>
+Look for the 2 cases of gsub() in processSchemaType()
+</item>
+
+<item>
+KML schema and the complexType element with name ObjectType
+<r:code>
+doc = xmlParse("~/Books/XMLTechnologies/Rpackages/RKML/inst/schema/kml21.xsd")
+o = getNodeSet(doc, "//x:*[@name='ObjectType']", "x")
+processSchemaType(o[[1]])
+</r:code>
+</item>
+
+<item>
+When we have a sequence  with only one element which has a count
+of c(minOccurs = 1,  maxOccurs = 1), then we return the element type.
+But we have to make certain that in the conversion from XML node to
+R object, we also unpeel the outer node.
+See msn search example.
+</item>
+
+<item>
+Infinite recursion:
+<r:code>
+msn = processWSDL("http://soap.search.msn.com/webservices.asmx?wsdl")
+trace(resolve, quote(cat(class(obj), if(is.character(obj)) obj, "\n")))
+zz = resolve(msn@operations[[1]][[1]]@returnValue, msn@types)
+</r:code>
+</item>
+
+<item>
+fromConverter for msn search example 
+has 
+<r:code>
+function(x, ..., obj = new( 'Search' )) {
+function (fun = sys.function(sys.parent())) 
+obj
+}
+</r:code>
+<r:code>
+msn = processWSDL("http://soap.search.msn.com/webservices.asmx?wsdl")
+i.msn = genSOAPClientInterface(,msn)
+resolve(msn@operations[[1]][[1]]@parameters[[1]], msn@types, recursive = FALSE)
+</r:code>
+</item>
+
+<item>
+Skipping attributes of complexType (e.g. Aggregate in PMML schema)
+</item>
+
+<item>
+UnionDefinition  having NULL for slotType.
+e.g. pmml-3-2.xsd.
+What if we have a ref and not a type in the 
+child of a xs:choice node.
+
+EXPRESSION, PREDICATE, Rule
+</item>
+
+<item>
+UnionDef() call. 
+Need to deal with local element definitions and references  to other 
+existing global elements.
+</item>
+
+<item status="check">
+For sequences, or for any element actually, add the constraints
+on the counts, e.g. c(0, Inf) or c(1, 3) or c(1).
+</item>
+
+<item status="done">
+The class Element should have a fromConverter and the function should be generated.
+Should this be a SOAPType.
+<br/>
+Element extends SchemaElement and that extends BasicSOAPType
+</item>
+
+<item>
+complexType/simpleContent with extensions to a string
+ending up as a ClassDefinition.
+<br/>
+PMML MatCell
+</item>
+
+<item>
+createSOAPConverter for SimpleElement.
+</item>
+
+<item status="check">
+Method for createSOAPConverter() for UnionDefinition 
+and also for SimpleSequenceType and SimpleElement.
+<br/>
+See PMML schema (pmml-3-2.xsd) for 3 examples of UnionDefinition
+and the xsd files in WSDLs for the SimpleSequenceType.
+e.g. IdListType, FieldListType, LinkListType, ...
+TypeTranslationSetType.
+</item>
+
+<item>
+readSchema("~/eBaySvc.wsdl", useInternal = T) is failing.
+<br/>
+As it should. That is a WSDL, not a schema. Perhaps we should make
+it smart enough to understand this.
+</item>
+<item status="done">
+Some elements in the eBaySvc schema are just simply lists
+and not SOAPType classes
+<r:code>
+which(sapply(types[[1]], class) == "list")
+           ErrorParameterType              AttributeSetType                 AttributeType               CharityInfoType 
+                          553                           597                           598                           679 
+           DataElementSetType            HistogramEntryType                     LabelType ListingDurationDefinitionType 
+                          720                           797                           832                           838 
+            ProductFamilyType               ProductInfoType                   ProductType          ReasonCodeDetailType 
+                          998                          1000                          1008                          1030 
+</r:code>
+These seem to be complexType/{annotation, sequence, attribute}.
+What should these be. They are complexType's  with a name and attribute
+and content. 
+<br/>
+<r:code id="eBaySchema">
+doc = xmlParse("~/eBaySvc.wsdl")
+x = processWSDLTypes(doc[["//wsdl:types", namepace = "ws"]], createConverters = FALSE, verbose = TRUE)
+</r:code>
+</item>
+
+<item status="done">
+processWSDLTypes and different unhandled cases.
+3 in PMML schema.
+"SelectResult" element definition with child
+ complexType with just attributes - field, feature, value
+"ParameterField" and  differently(?)   "ArrayType"
+<br/>
+Converted these to SimpleElement.
+</item>
+
+<item>
+For elements with mixed="true", record this and make use of it.
+e.g. ArrayType in PMML.
+</item>
+
+<item>
+See if an attribute element is allowed to have any
+children other than a simpleType/restriction path?
+If not, then merge the two cases for attribute in
+processWSDLType into a single processing.
+<br/>
+I think this is true.
+</item>
+
+<item>
+MSN search schema in  the WSDL.
+Problem with UTF when we download it and reformat it in R.
+<r:code>
+v = readSchema("WSDLs/msnSearch.asmx")
+</r:code>
+</item>
+
+<item status="check">
+MSN  schema. First element
+<programlisting><![CDATA[
+      <xsd:simpleType name="SourceType">
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="Web"/>
+          <xsd:enumeration value="News"/>
+          <xsd:enumeration value="Ads"/>
+          <xsd:enumeration value="InlineAnswers"/>
+          <xsd:enumeration value="PhoneBook"/>
+          <xsd:enumeration value="WordBreaker"/>
+]]></programlisting>
+is coming out as an ExtendedClassDefinition rather
+than an enumeration.
+</item>
+
+<item item="check">
+SourceType and SafeSearchOptions coming out as 
+ExtendedClassDefinition.
+Same.
+</item>
+
+<item status="check">
+MSN search schema and second element xsl:ist
+These are all the same and
+causing the same problems as they come out as  simple
+character values when processed by the schema. 
+ResultFieldMask     SearchFlags      SortByType 
+<br/>
+These three problems are now implemented with
+RestrictedListType and EnumValuesDef in processSchemaType.
+Check that they behave completely.
+</item>
+
+</items>
+</topic>
+</topics>

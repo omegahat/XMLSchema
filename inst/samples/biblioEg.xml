@@ -1,0 +1,29 @@
+<bibliography>
+<book>
+<title>XML and Web Technologies with R</title>
+<year>2011</year>
+<authors>
+  <author><firstname>Deb</firstname><lastname>Nolan</lastname></author>
+  <author><firstname>Duncan</firstname><lastname>Temple Lang</lastname></author>
+</authors>
+<publisher>Springer</publisher>
+</book>
+
+<article>
+<title>Interactive and Animated Graphics for the Web in R: the SVGAnnotation package</title>
+<year>2011</year>
+<authors>
+  <author><firstname>Deb</firstname><lastname>Nolan</lastname></author>
+  <author><firstname>Duncan</firstname><lastname>Temple Lang</lastname></author>
+</authors>
+<journal>Journal of Statistical Software</journal>
+</article>
+
+<article>
+<title>Calling native routines from R: the Rlibffi package</title>
+<year>2011</year>
+<author><firstname>Duncan</firstname><lastname>Temple Lang</lastname></author>
+<journal>Journal of Statistical Software</journal>
+</article>
+
+</bibliography>

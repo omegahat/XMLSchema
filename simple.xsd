@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.omegahat.org" elementFormDefault="qualified">
+
+<xs:element name="bar" type="xs:string"/>
+
+<xs:complexType name="foo">
+ <xs:sequence>
+   <xs:element ref="bar" minOccurs="0" maxOccurs="3" />
+ </xs:sequence>
+</xs:complexType>
+
+
+<xs:complexType name="multi">
+ <xs:element ref="bar" minOccurs="0" maxOccurs="3" />
+ <xs:element name="bob" type="foo"/>
+ <xs:attribute name="id" type="xs:ID"/>
+ <xs:attribute name="when" type="xs:dateTime"/>
+</xs:complexType>
+
+
+</xs:schema>
