@@ -140,7 +140,7 @@ function(i, where = globalenv(),
       i = i@type
     }
 
-  if(i@nsuri %in% "http://www.w3.org/2001/XMLSchema") {
+  if(length(i@nsuri) && !is.na(i@nsuri) && i@nsuri %in% "http://www.w3.org/2001/XMLSchema") {
            # the type refers to a type defined in the XML schema language itself.
       return(getSchemaClass(i, types))
     

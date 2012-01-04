@@ -503,9 +503,9 @@ s,@build_alias@,|#_!!_#|,g
 s,@host_alias@,|#_!!_#|,g
 s,@target_alias@,|#_!!_#|,g
 s,@PKG_NAME@,|#_!!_#|XMLSchema,g
-s,@VERSION@,|#_!!_#|0.6-0,g
-s,@TAR_FILE@,|#_!!_#|XMLSchema_0.6-0.tar.gz,g
-s,@DATE@,|#_!!_#|30 November 2011,g
+s,@VERSION@,|#_!!_#|0.6-1,g
+s,@TAR_FILE@,|#_!!_#|XMLSchema_0.6-1.tar.gz,g
+s,@DATE@,|#_!!_#|04 January 2012,g
 s,@LIBOBJS@,|#_!!_#|,g
 s,@LTLIBOBJS@,|#_!!_#|,g
 :end
