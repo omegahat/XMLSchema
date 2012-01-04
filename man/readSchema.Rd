@@ -75,11 +75,16 @@ readSchema(filename, createConverters = FALSE, verbose = FALSE,
 
  dir = system.file("samples", package = "XMLSchema")
  files = list.files(dir, pattern = "\\\.xsd$", full.names = TRUE)
- els = lapply(files, function(x) {print(x); readSchema(x, createConverters = FALSE, verbose = TRUE)})
+ els = lapply(files, function(x) {
+                        print(x)
+                        readSchema(x, createConverters = FALSE, verbose = TRUE)
+                      })
  sapply(els, length)
  sapply(els, names)
 
- z = readSchema("http://www.weather.gov/forecasts/xml/SOAP_server/ndfdXMLserver.php?wsdl")
+ library(RCurl)
+ if(url.exists("http://www.weather.gov/forecasts/xml/SOAP_server/ndfdXMLserver.php?wsdl"))
+    z = readSchema("http://www.weather.gov/forecasts/xml/SOAP_server/ndfdXMLserver.php?wsdl")
 }
 \keyword{IO}
 \keyword{programming}

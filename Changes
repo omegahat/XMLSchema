@@ -1,3 +1,9 @@
+0.6-1
+
+  *    Support for recognizing types or elements in a schema come from XML schema types themselves,
+       e.g. a <schema> element.
+
+
 0.6-0
 
   *   Identify direct cross-references in type definitions in schema and avoid circularities

@@ -47,7 +47,7 @@ function(node, doc = xmlDoc(node), namespaceDefs = gatherNamespaceDefs(node), cr
 
    if(FALSE && is(def, "SchemaTypes") && any(w <- sapply(def, is, "SchemaTypes"))) {
        co = new("SchemaCollection", def[w])
-browser()       
+#browser()       
        co[[ findTargetNamespace(node) ]] = new("SchemaTypes", def[ !w ], namespaceDefs = def@namespaceDefs, targetNamespace = def@targetNamespace)
        
        def = co
@@ -131,7 +131,7 @@ function(node, namespaceDefs = gatherNamespaceDefs(node), createConverters = FAL
                       names(ans) <- names
 
                       if(FALSE && is(o, "Element") && xmlName(el) == "complexType") {
-                        browser()
+                        #browser()
                           ans[[ length(ans) + 1]] <- o
                           names[length(names)+1] = n
                           names(ans) <- names

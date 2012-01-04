@@ -139,6 +139,13 @@ function(i, where = globalenv(),
     if(is(i, "AttributeDef")) {
       i = i@type
     }
+
+  if(i@nsuri %in% "http://www.w3.org/2001/XMLSchema") {
+           # the type refers to a type defined in the XML schema language itself.
+      return(getSchemaClass(i, types))
+    
+  }
+    
     
 #    if(name %in% c("eComp", "ECompression")) {cat("Hey", name, "\n"); browser()}
     while(is(i, "Element"))
@@ -527,7 +534,7 @@ function(i, types, namespaceDefs, name, classes, pending, baseClass, where = glo
           opts = new("CodeGenOpts"))
 {
 
-#if(name == "equivalents-inquiry") browser()
+#if(name == "RequestData") browser()
   
      i@slotTypes = lapply(i@slotTypes, resolve, types, namespaceDefs)
 
@@ -553,7 +560,7 @@ function(i, types, namespaceDefs, name, classes, pending, baseClass, where = glo
           extraBaseClasses = c("list", extraBaseClasses)
           repn = representation()
           
-     } else if(is(i, "ClassDefinition") && length(i@slotTypes) > 1 && sum(w <- sapply(i@slotTypes, is, "SimpleSequenceType")) == 1)  {
+     } else if(FALSE && is(i, "ClassDefinition") && length(i@slotTypes) > 1 && sum(w <- sapply(i@slotTypes, is, "SimpleSequenceType")) == 1)  {
           # here we have a class definition with more than one slot and with exactly one slot that is a sequence
           # So we can  extend list.
 
@@ -1163,3 +1170,18 @@ function(i, where = globalenv(),
    
       def
   })
+
+
+
+getSchemaClass =
+  #
+  # Get the class corresponding to a schema type itself.
+  #
+function(def, types)
+{
+   class = switch(def@name, schema = "SchemaTypes", "ANY")
+   if(class != "ANY")
+      getClassDef(class, package = "XMLSchema")
+   else
+      class
+}

@@ -201,7 +201,6 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
 
   name = xmlGetAttr(type, "name", "")
 
-
   nsDefs = xmlNamespaceDefinitions(type, simplify = FALSE)
   if(length(nsDefs)) {
       namespaceDefs[ names(nsDefs) ] = nsDefs
@@ -811,6 +810,8 @@ processSequence =
   #
 function(node, types, namespaceDefs = list(), name = getElementName(node), targetNamespace = NA, elementFormDefault = NA)
 {
+
+#if(name == "RequestData") browser()
   
   if(xmlSize(node) == 1 && !is.na(xmlGetAttr(node[[1]], "maxOccurs", NA))) {
 
