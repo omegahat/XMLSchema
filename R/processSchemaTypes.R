@@ -745,11 +745,14 @@ function(node, types, namespaceDefs = list(), targetNamespace = NA, elementFormD
     stop("Handle this case in getType for ", xmlName(node))
 }
 
-getElementName =
+setGeneric("getElementName",
   #
   # Handles an <element name="..."> and <element ref="...">
   #
-function(node)
+function(node, keepNS = FALSE, ...)
+      standardGeneric("getElementName"))
+
+if(FALSE) {
 {
    ans = xmlGetAttr(x, "name")
    if(length(ans))
@@ -765,19 +768,30 @@ function(node)
 
    NA
 }
+}
 
-getElementName =
+setMethod("getElementName", "ANY",
   #
   # And defined differently again!!!
   #
-function(node, keepNS = FALSE)
+function(node, keepNS = FALSE, ...)
 {  
-  ans = xmlGetAttr(node, "name", xmlGetAttr(node, "ref", as.character(NA)))
+  ans = xmlGetAttr(node, "name", xmlGetAttr(node, "ref", if(xmlName(node) == "any") "any" else as.character(NA)))
   if(keepNS)
     ans
   else
     gsub(".*:", "", ans)
-}
+})
+
+setMethod("getElementName", "AnySOAPType",
+  #
+  # And defined differently again!!!
+  #
+function(node, keepNS = FALSE, ...)
+  "any"
+)
+
+
 
 asCount =
 function(x)
