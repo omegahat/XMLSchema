@@ -25,8 +25,9 @@ setGeneric("resolve", function(obj, context, namespaces = character(), recursive
                           xrefInfo = context@circularDefs
 
                        ans = standardGeneric("resolve")
-                       if(!is.null(ans) && is(obj, "GenericSchemaType") && is(ans, "GenericSchemaType"))
-                          ans@default = obj@default
+                       if(!is.null(ans) && is(obj, "GenericSchemaType") && is(ans, "GenericSchemaType")) {
+                          ans@default = optionalDefaultValue(ans, obj@default)
+                        }
                        
                        ans
                      })
@@ -101,7 +102,7 @@ setMethod("resolve", c("SOAPTypeReference", "SchemaCollection"),
                 
              
              ans = resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo)
-             ans@default = obj@default
+             ans@default =  optionalDefaultValue(ans, obj@default)
              ans
            })
 }
@@ -443,7 +444,7 @@ setMethod("resolve", c("Element", "list"),
 #XXX temporary test
     obj@type = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo)
     if(is(obj@type, "Element")) {
-      obj@type@default = obj@default
+      obj@type@default =  optionalDefaultValue(obj@type, obj@default)
       return(obj@type)
     }
     return(obj)

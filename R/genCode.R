@@ -526,7 +526,11 @@ setAs("SOAPElementConverter", "AsFunction",
 getDefaultValue =
 function(type)
 {
-    type@default
+ #XXX remove this when we compute the default correctly earlier when creating the type descriptions.
+#    if(0 %in% type@count)
+#       vector(class(type@default), 0)
+#    else
+      type@default
 }
 
 defineClassDefinition =
@@ -1081,11 +1085,12 @@ function(repn, slots, base = NA, className = NA, defaults = NULL)
     base = base[1]
     
     str = sapply(repn, function(x) x == "character")
-
-   if(!all(nas <- sapply(defaults, is.na))) {
+    
+    
+   if(!all(nas <- sapply(defaults, function(x) is.null(x) || (length(x) == 1 && is.na(x))))) {
 
        values =  mapply(as, defaults[!nas], repn[!nas], SIMPLIFY = FALSE)
-       values[ names(str)[str & nas] ] = ""
+      # values[ names(str)[str & nas] ] = ""
        ans = do.call(prototype, values)
        return(ans)
     }

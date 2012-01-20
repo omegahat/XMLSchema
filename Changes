@@ -1,4 +1,7 @@
-0.6-2
+0.7-0
+ 
+  *    Compute default values for slots of new class from schema elements to handle
+       sequences and optional values (i.e. count containing 0).
 
   *    Compute name for <any/> element as any, not NA.
 

@@ -31,7 +31,7 @@ setClassUnion("AnySimpleType",  c("logical", "integer", "numeric", "character"))
 setClass("GenericSchemaType", representation(name="character",
                                              ns="character",
                                              nsuri="character",
-                                             default = "character",                                             
+                                             default = "ANY", # "character",                                             
                                              Rname = "character", # the name of the type in R that corresponds to this class. Needed if we have to manually specify it.
                                              documentation = "character"))
 
