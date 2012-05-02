@@ -197,7 +197,7 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
            targetNamespace = character(), elementFormDefault = NA, localElements = FALSE)
 {
   if(inherits(type, c("XMLInternalCommentNode", "XMLComment", "XMLInternalTextNode")) || xmlName(type) == "annotation")
-      return(new("SOAPVoidType"))
+      return(new("SchemaVoidType"))
 
   name = xmlGetAttr(type, "name", "")
 
@@ -419,7 +419,7 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
         attrs = c(attrs, processSchemaType(i, types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE))
      names(attrs) = sapply(attrs, slot, "name")
 
-     return(new("SOAPComplexType",
+     return(new("SchemaComplexType",
                  name = xmlGetAttr(type, "name"),
                  attributes = attrs,
                  xmlAttrs = as(xmlAttrs(type), "character")))
@@ -494,7 +494,7 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
                     # Need to resolve the type if it is not a primitive.
                     # XXX also want the minOccurs and maxOccurs
 
-      def = SOAPType(name, counts = getElementCount(type), obj = new("SOAPComplexType"), namespaceDefs = namespaceDefs)
+      def = SOAPType(name, counts = getElementCount(type), obj = new("SchemaComplexType"), namespaceDefs = namespaceDefs)
       def@xmlAttrs = as(xmlAttrs(type), "character")
       def@content = processSequence(tmp, types, namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault)
       def@attributes = lapply(xmlChildren(type)[names(type) == "attribute"], processAttribute, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE, types = types)
@@ -566,7 +566,7 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
         def = new("ClassDefinition", name = name, slotTypes = structure(els, names = xmlSApply(type, xmlGetAttr, "name")),
                                       documentation = docString, isAttribute = rep(TRUE, length(els)),
                                       nsuri = targetNamespace)
-     #   def = new("SOAPComplexType", name = name, attributes = els)
+     #   def = new("SchemaComplexType", name = name, attributes = els)
      #   def@xmlAttrs = as(xmlAttrs(type), "character")
 
        # XXX
@@ -638,7 +638,7 @@ function(node, types, namespaceDefs, name = "",  targetNamespace = NA, elementFo
     } else {
        name = xmlGetAttr(node, "name")
        els = strsplit(name, ":")[[1]]
-       ans = new("SOAPGroupType") #, name = els[length(els)], ns = if(length(els) > 1) els[1]) # nsuri
+       ans = new("SchemaGroupType") #, name = els[length(els)], ns = if(length(els) > 1) els[1]) # nsuri
        ans@slotTypes = xmlApply(node, processSchemaType, types = types, namespaceDefs = namespaceDefs,
                                        targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
    }
@@ -959,7 +959,7 @@ function(element, name = xmlGetAttr(element, "name"), namespaceDefs = list(), ty
   }
 
   if(xmlSize(element) == 0) {
-    obj =  new("SOAPVoidType")  # new("SimpleElement", name = name)
+    obj =  new("SchemaVoidType")  # new("SimpleElement", name = name)
   } else if(names(element)[1] == "complexType" && all(names(element[[1]]) == "attribute")) {
      # e.g. ParameterField, ArrayType in PMML.
     obj = new("SimpleElement", name = xmlGetAttr(element, "name", as.character(NA)),
@@ -1367,7 +1367,7 @@ function(type, name, types, namespaceDefs, targetNamespace = NA, elementFormDefa
           def =  processSchemaType(restriction, types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace,
                                     elementFormDefault = elementFormDefault, localElements = TRUE)
 
-          if(is(def, "SOAPComplexType") && is(def@content, "SimpleSequenceType"))  #??? perhaps add base is and Array - grepl("(^|:)Array", base)
+          if(is(def, "SchemaComplexType") && is(def@content, "SimpleSequenceType"))  #??? perhaps add base is and Array - grepl("(^|:)Array", base)
             def = def@content
 
           def@name = name

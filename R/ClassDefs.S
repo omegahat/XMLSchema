@@ -61,7 +61,7 @@ setClass("CrossRefClass")
 # For representing arbitrary content, e.g. <complexType/>
 setClass("AnySOAPType", contains = "SOAPType", prototype = list(name = "AnySOAPType"))
 
-setClass("SOAPVoidType", representation("SOAPType"),
+setClass("SchemaVoidType", representation("SOAPType"),
             prototype = list(name = "null", ns = "xsi"))
 setClass("SOAPAnyType", representation("SOAPType"))
 
@@ -76,7 +76,7 @@ setClass("BasicSOAPType", representation("SOAPType",
 
 setClassUnion("SOAPTypeOrList", c("SOAPType", "list", "NULL"))
 
-setClass("SOAPComplexType",
+setClass("SchemaComplexType",
           representation(attributes = "list", content = "SOAPTypeOrList", xmlAttrs = "character"),
           contains = "BasicSOAPType")
             
@@ -192,7 +192,7 @@ setClass("ArrayClassDefinition",  contains = "CompositeTypeDefinition")
 
 
 # We might try to extend CompositeTypeDefinition below.
-setClass("SOAPGroupType", representation(slotTypes = "list"), contains = "CompositeTypeDefinition")
+setClass("SchemaGroupType", representation(slotTypes = "list"), contains = "CompositeTypeDefinition")
 setClass("SOAPGroupRefType", contains = "SOAPType")
 
 

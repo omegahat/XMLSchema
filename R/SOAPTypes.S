@@ -6,7 +6,7 @@ SOAPType =
 function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(), obj = new("SOAPTypeReference"), targetNamespace = "") # was SOAPType
 {
   if(is.null(name)) 
-    return(new("SOAPVoidType"))
+    return(new("SchemaVoidType"))
 
 
    # If the name is in the form of namespace:type, split it

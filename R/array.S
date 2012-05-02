@@ -41,8 +41,8 @@ setGeneric("fromXML", function(node, root = NULL, converters = SchemaPrimitiveCo
                        })
 
 
-# Regardles of what the node is, convert a SOAPVoidType to NULL.
-setMethod("fromXML", c(type="SOAPVoidType"),
+# Regardles of what the node is, convert a SchemaVoidType to NULL.
+setMethod("fromXML", c(type="SchemaVoidType"),
  function(node, root = NULL, converters = SchemaPrimitiveConverters,
            append = TRUE, type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node))          
   {

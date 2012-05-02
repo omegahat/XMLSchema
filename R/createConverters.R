@@ -274,7 +274,7 @@ setMethod("createSOAPConverter",
             })
 
 
-setMethod("createSOAPConverter", "SOAPComplexType",
+setMethod("createSOAPConverter", "SchemaComplexType",
      function(type, namespaces, defs = NULL, types = list(), ...) {
 
    ids = names(type@attributes)

@@ -3,7 +3,7 @@
 \title{Read the given XML schema and process the contents}
 \description{
  This is the top-level function for reading an XML schema.
- It takes the name of the file to read or an already parse
+ It takes the name of the file to read or an already parsed
  XML document (e.g. via \code{\link[XML]{xmlParse}} or
  \code{\link[XML]{xmlTreeParse}}) and 
   processes the nodes in the document to create R-level

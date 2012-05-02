@@ -69,12 +69,12 @@ setMethod("resolve", c("BasicSOAPType", "list"),
 #XXX
 # Here for StringArray in processWSDL("MassSpecAPI.wsdl", port = 3)
 # That resolves to a ComplexType with a SimpleSequenceType
-setMethod("resolve", c("SOAPComplexType", "SchemaCollection"),
+setMethod("resolve", c("SchemaComplexType", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
              if(length(obj@content) == 1)
                  return(resolve(obj@content, context, namespaces, recursive, raiseError, xrefInfo))
 #             browser()
-warning("probably need to do something different in resolve(SOAPComplexType, SchemaCollection) ", obj@name)
+warning("probably need to do something different in resolve(SchemaComplexType, SchemaCollection) ", obj@name)
          #XXXX not appropriate
              resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo)                                      
            })
@@ -199,7 +199,7 @@ setMethod("resolve", c("PrimitiveSOAPType", "list"),
 
 
 
-setMethod("resolve", c("SOAPVoidType"),
+setMethod("resolve", c("SchemaVoidType"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
              obj
            })
@@ -214,11 +214,11 @@ setMethod("resolve", c("ArrayType", "list"),
              obj
            })
 
-setMethod("resolve", c("SOAPVoidType", "SchemaCollection"),
+setMethod("resolve", c("SchemaVoidType", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) 
 	       return(obj))
 
-setMethod("resolve", c("SOAPVoidType"),
+setMethod("resolve", c("SchemaVoidType"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) 
 	       return(obj))
 

@@ -25,8 +25,12 @@ function(name, rnode, namespaces = list(), targetNamespace = NA, base = xmlGetAt
      if(!(base %in% c("string", "token", "NMTOKEN", "Name", "ID", "IDREF"))) {
         warning("treating ", name, " as an enumeration type")
      }
-     
-     def <- new("EnumValuesDef", name = name, values = xmlSApply(rnode,  xmlGetAttr, "value"))
+
+
+     if(base == "string")
+        def = createRestrictedStringDefinition(rnode, name)
+     else
+        def <- new("EnumValuesDef", name = name, values = xmlSApply(rnode,  xmlGetAttr, "value"))
      if(length(name) == 0)  #XXX
               def@name = paste(def@values, collapse = ",")
    }

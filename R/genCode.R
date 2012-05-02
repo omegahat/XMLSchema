@@ -30,20 +30,24 @@ function(name, useDash = if("UseDashInSOAPNames" %in% names(options()))
   paste(els, collapse="")
 }
 
+BaseClassName = "VirtualXMLSchemaClass" # "VirtualSOAPClass"
 
 defineClasses =
   #
   # namespaceDefs is used in mapSOAPTypeToS as the third argument.
   #
 function(types,  where = globalenv(), namespaceDefs = list(), verbose = FALSE,
-          baseClass = "VirtualSOAPClass", force = FALSE, opts = new("CodeGenOpts"),
+          baseClass = BaseClassName, force = FALSE, opts = new("CodeGenOpts"),
           pending = new.env(hash = TRUE, emptyenv()), classes = new.env(hash = TRUE, emptyenv())  )
 {
   if(is(types, "SchemaTypes"))
     types = structure(list(types), class = "SchemaCollection")
   
        # for each schema, define each type.
-  lapply(types,  function(schema)  lapply(schema, defClass, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, opts = opts))
+  lapply(types,
+           function(schema)
+               lapply(schema, defClass, where, namespaceDefs, verbose, pending,
+                                        classes, types, baseClass, force, opts = opts))
   ls(classes)
 }
 
@@ -127,11 +131,12 @@ function(i, where = globalenv(),
          pending = new.env(hash = TRUE, emptyenv()),
          classes = new.env(hash = TRUE, emptyenv()),
          types = NULL,
-         baseClass = "VirtualSOAPClass", force = FALSE,
+         baseClass = BaseClassName, force = FALSE,
          name = getName(i),
          ignorePending = FALSE, opts = new("CodeGenOpts"))
 {
-  orig = i
+
+    orig = i
 
     if(is.null(i))
       return(FALSE)
@@ -140,7 +145,8 @@ function(i, where = globalenv(),
       i = i@type
     }
 
-  if(length(i@nsuri) && !is.na(i@nsuri) && i@nsuri %in% "http://www.w3.org/2001/XMLSchema") {
+  if(!is(i, "RestrictedStringType") && length(i@nsuri) &&
+          !is.na(i@nsuri) && i@nsuri %in% "http://www.w3.org/2001/XMLSchema") {
            # the type refers to a type defined in the XML schema language itself.
       return(getSchemaClass(i, types))
     
@@ -224,7 +230,7 @@ setMethod("defClass", "LocalElement",
                    pending = new.env(hash = TRUE, emptyenv()),
                    classes = new.env(hash = TRUE, emptyenv()),
                    types = NULL,
-                   baseClass = "VirtualSOAPClass",
+                   baseClass = BaseClassName,
                    force = FALSE,
                    name = getName(i),
                    ignorePending = FALSE, opts = new("CodeGenOpts")) {
@@ -240,7 +246,7 @@ setMethod("defClass", "SchemaTypes",
                    pending = new.env(hash = TRUE, emptyenv()),
                    classes = new.env(hash = TRUE, emptyenv()),
                    types = NULL,
-                   baseClass = "VirtualSOAPClass", force = FALSE,
+                   baseClass = BaseClassName, force = FALSE,
                    name = if(is(i, "GenericSchemaType") || is(i, "XMLSchemaComponent")) i@name else i$name,
                    ignorePending = FALSE, opts = new("CodeGenOpts")) {
 
@@ -255,7 +261,7 @@ setMethod("defClass", "Element",
                    pending = new.env(hash = TRUE, emptyenv()),
                    classes = new.env(hash = TRUE, emptyenv()),
                    types = NULL,
-                   baseClass = "VirtualSOAPClass", force = FALSE,
+                   baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
                    ignorePending = FALSE, opts = new("CodeGenOpts")) {
             defClass(i@type, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, name, ignorePending, opts)
@@ -268,11 +274,10 @@ setMethod("defClass", "ANY",
                    pending = new.env(hash = TRUE, emptyenv()),
                    classes = new.env(hash = TRUE, emptyenv()),
                    types = NULL,
-                   baseClass = "VirtualSOAPClass", force = FALSE,
+                   baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
                    ignorePending = FALSE, opts = new("CodeGenOpts")) {
   def = NULL
-
   
 #if(name == "ResourceIdSetType") {
 #  unlockBinding("showDefClassTrace", getNamespace("XMLSchema"))
@@ -363,9 +368,9 @@ if(TRUE) {
            return(def)
          } else if(is(i, "SimpleSequenceType")) {   # XXX was "ArrayType" Nov 6.
             def = createArrayClass(i, types, name, where = where, verbose = verbose)
-         } else if(is(i, "SOAPComplexType")) {
+         } else if(is(i, "SchemaComplexType")) {
              # attributes and content
-             #XXX We should convert the SOAPComplexType to a class definition before we get to this stage.
+             #XXX We should convert the SchemaComplexType to a class definition before we get to this stage.
              #  i.e. in processWSDL()
            if(verbose)
               cat("defining", i@name, " (temporary solution)\n")
@@ -397,7 +402,7 @@ setMethod("defClass", "CrossRefType",
                    pending = new.env(hash = TRUE, emptyenv()),
                    classes = new.env(hash = TRUE, emptyenv()),
                    types = NULL,
-                   baseClass = "VirtualSOAPClass",
+                   baseClass = BaseClassName,
                    force = FALSE,
                    name = getName(i),
                    ignorePending = FALSE, opts = new("CodeGenOpts")) {
@@ -405,14 +410,14 @@ setMethod("defClass", "CrossRefType",
             setClass(i@name, contains = "CrossRefClass", where = where)
           })
 
-setMethod("defClass", "SOAPGroupType",
+setMethod("defClass", "SchemaGroupType",
           function(i, where = globalenv(),
                    namespaceDefs = list(),
                    verbose = FALSE,
                    pending = new.env(hash = TRUE, emptyenv()),
                    classes = new.env(hash = TRUE, emptyenv()),
                    types = NULL,
-                   baseClass = "VirtualSOAPClass",
+                   baseClass = BaseClassName,
                    force = FALSE,
                    name = getName(i),
                    ignorePending = FALSE, opts = new("CodeGenOpts")) {
@@ -427,13 +432,13 @@ tmp = function(i, where = globalenv(),
                 pending = new.env(hash = TRUE, emptyenv()),
                 classes = new.env(hash = TRUE, emptyenv()),
                 types = NULL,
-                baseClass = "VirtualSOAPClass", force = FALSE,
+                baseClass = BaseClassName, force = FALSE,
                 name = getName(i),
                 ignorePending = FALSE, opts = new("CodeGenOpts")) {
                  return(FALSE)
              }
 setMethod("defClass", "NULL", tmp)
-setMethod("defClass", "SOAPVoidType", tmp)
+setMethod("defClass", "SchemaVoidType", tmp)
 
 
 
@@ -444,7 +449,7 @@ setMethod("defClass", "AttributeDef",
                    pending = new.env(hash = TRUE, emptyenv()),
                    classes = new.env(hash = TRUE, emptyenv()),
                    types = NULL,
-                   baseClass = "VirtualSOAPClass", force = FALSE,
+                   baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
                    ignorePending = FALSE, opts = new("CodeGenOpts")) {
 
@@ -460,7 +465,7 @@ setMethod("defClass", "SOAPTypeReference",
                    pending = new.env(hash = TRUE, emptyenv()),
                    classes = new.env(hash = TRUE, emptyenv()),
                    types = NULL,
-                   baseClass = "VirtualSOAPClass", force = FALSE,
+                   baseClass = BaseClassName, force = FALSE,
                    name = if(is(i, "GenericSchemaType") || is(i, "XMLSchemaComponent")) i@name else i$name,
                    ignorePending = FALSE, opts = new("CodeGenOpts")) {
 
@@ -485,7 +490,7 @@ setMethod("defClass", "RestrictedStringPatternDefinition",
                    pending = new.env(hash = TRUE, emptyenv()),
                    classes = new.env(hash = TRUE, emptyenv()),
                    types = NULL,
-                   baseClass = "VirtualSOAPClass", force = FALSE,
+                   baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
                    ignorePending = FALSE, opts = new("CodeGenOpts")) {
 
@@ -542,7 +547,7 @@ function(i, types, namespaceDefs, name, classes, pending, baseClass, where = glo
   
      i@slotTypes = lapply(i@slotTypes, resolve, types, namespaceDefs)
 
-         # Handle any SOAPGroupType and make certain those classes are defined and then
+         # Handle any SchemaGroupType and make certain those classes are defined and then
          # use them as base classes to extend and remove from the slotTypes.
      isGroup = sapply(i@slotTypes, is, "SOAPGroupType")
      if(any(isGroup)) {
@@ -734,7 +739,7 @@ function(id, ns, types)
 defUnionClass =
 function(type, types = NULL, nsURI = rep(NA, length(type)),
           name = type@name, where = globalenv(), verbose = FALSE, force = FALSE,
-           classes = list(), pending = new.env(hash = TRUE, emptyenv()), baseClass = "VirtualSOAPClass",
+           classes = list(), pending = new.env(hash = TRUE, emptyenv()), baseClass = BaseClassName,
             opts = new("CodeGenOpts"), namespaceDefs = list())
 {
 
@@ -823,7 +828,7 @@ if(FALSE) {
 
   createTypeClass =
   # probably not called anymore as lifted into the defineClasses() function above.
-    function(type, types, where = globalenv(), parentClass = "VirtualSOAPClass",
+    function(type, types, where = globalenv(), parentClass = BaseClassName,
          namespaceDefs = list())
       {
         if(verbose)
@@ -838,7 +843,7 @@ if(FALSE) {
 createArrayClass =
   # Should be merged into createTypeClass.sl
   #XX parentClass not used
-function(type, types, name = NA, where = globalenv(), parentClass = "VirtualSOAPClass", verbose = FALSE)
+function(type, types, name = NA, where = globalenv(), parentClass = BaseClassName, verbose = FALSE)
 {
 
 #  name = type$definition@elementType
@@ -1059,7 +1064,7 @@ setMethod("defClass", "EnumValuesDef",
                    pending = new.env(hash = TRUE, emptyenv()),
                    classes = new.env(hash = TRUE, emptyenv()),
                    types = NULL,
-                   baseClass = "VirtualSOAPClass", force = FALSE,
+                   baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
                    ignorePending = FALSE, opts = new("CodeGenOpts")) {
 
@@ -1119,7 +1124,7 @@ function(i, where = globalenv(),
          pending = new.env(hash = TRUE, emptyenv()),
          classes = new.env(hash = TRUE, emptyenv()),
          types = NULL,
-         baseClass = "VirtualSOAPClass", force = FALSE,
+         baseClass = BaseClassName, force = FALSE,
          name = getName(i),
          ignorePending = FALSE, opts = new("CodeGenOpts"))
 {
@@ -1142,7 +1147,7 @@ function(i, where = globalenv(),
          pending = new.env(hash = TRUE, emptyenv()),
          classes = new.env(hash = TRUE, emptyenv()),
          types = NULL,
-         baseClass = "VirtualSOAPClass", force = FALSE,
+         baseClass = BaseClassName, force = FALSE,
          name = getName(i),
          ignorePending = FALSE, opts = new("CodeGenOpts"))
   {
