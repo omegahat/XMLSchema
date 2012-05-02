@@ -72,7 +72,7 @@ function(id, types)
   els = types[ names(types) == id ]
   isEl = sapply(els, is, "Element")
   ns = sapply(els, slot, "nsuri")
-  ans = sapply(els, XMLSchema:::mapSOAPTypeToS, types)
+  ans = sapply(els, XMLSchema:::mapSchemaTypeToS, types)
 
   structure(ans, names = ns)
 }

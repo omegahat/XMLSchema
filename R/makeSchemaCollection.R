@@ -120,7 +120,7 @@ function(node, namespaceDefs = gatherNamespaceDefs(node), createConverters = FAL
                       if(is.null(o))
                          next
                       
-                      if(FALSE && createConverters && is(o, "BasicSOAPType"))
+                      if(FALSE && createConverters && is(o, "BasicSchemaType"))
                          o@fromConverter = createSOAPConverter(o, ans)
 
                       ans[[i]] <- o

@@ -37,7 +37,7 @@ function(from)
 }
 
 
-# Was SOAPTypeConverter and used setOldClass.
+# Was SchemaTypeConverter and used setOldClass.
 setClass("XMLTypeConverter", contains = "function")
 setClass("XMLArrayConverter", contains = "XMLTypeConverter")
 setClass("XMLChoiceConverter", contains = "XMLTypeConverter")
@@ -85,7 +85,7 @@ setMethod("createSOAPConverter",
                                elType = type@slotTypes[[i]]
                                id = slotIds[i]
                                
-                               if(is(elType, "PrimitiveSOAPType")) {
+                               if(is(elType, "PrimitiveSchemaType")) {
 
                                  # Deal with minOccurs, etc. for optional
                                  # Also, if all are required (or up to before the first optional node)
@@ -209,7 +209,7 @@ setMethod("createSOAPConverter",
                                type = if(is.character(type))
                                        schemaTypes[[id]] # lookupDef(id, schemaTypes)  # id or types[[id]]
 
-                               typeName = sQuote(mapSOAPTypeToS(type@name, schemaTypes)) #XXX want the types in this call.
+                               typeName = sQuote(mapSchemaTypeToS(type@name, schemaTypes)) #XXX want the types in this call.
                                if(length(type@count)) {
                                           # lapply or sapply ? 
                                  paste("obj@", id, " <- lapply(x[names(x) == ", sQuote(id), "], as, ", typeName, ")", sep = "")
@@ -235,9 +235,9 @@ setMethod("createSOAPConverter",
 
              
             f = eval(parse(text = paste(txt, collapse = "\n")), globalenv())
-#            class(f) = c("SOAPElementConverter", "SOAPTypeConverter", "function")
+#            class(f) = c("SchemaElementConverter", "SchemaTypeConverter", "function")
              
-            f = new("SOAPElementConverter", f)
+            f = new("SchemaElementConverter", f)
 
             f
           })
@@ -296,10 +296,10 @@ function(attrName, def, types = list(), target = "obj", src = "x")
 {
   if(def@use == "optional")
       sprintf("tmp <- xmlGetAttr(%s, '%s')\nif(!is.null(tmp)) %s@%s = as(tmp, '%s')",
-                 src, attrName, target, attrName, mapSOAPTypeToS(def@type, types))
+                 src, attrName, target, attrName, mapSchemaTypeToS(def@type, types))
   else
       sprintf("%s@%s = as(xmlGetAttr(%s, '%s'), '%s')",
-                 target, attrName, src, attrName, mapSOAPTypeToS(def@type, types))
+                 target, attrName, src, attrName, mapSchemaTypeToS(def@type, types))
 }
 
 

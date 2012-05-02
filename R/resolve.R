@@ -2,7 +2,7 @@ resolveError =
   #
   # A function to raise a special error for resolving types within the WSDL schema.
   #
-function(..., class = "SOAPResolveError")
+function(..., class = "SchemaResolveError")
 {
    x = simpleError(paste(..., sep = ""))
    class(x) = c(class, class(x))
@@ -60,7 +60,7 @@ setMethod("resolve", c("NULL", "list"),
              NULL
            })
 
-setMethod("resolve", c("BasicSOAPType", "list"),
+setMethod("resolve", c("BasicSchemaType", "list"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
              stop("No method for this type ", class(obj))
            })
@@ -80,7 +80,7 @@ warning("probably need to do something different in resolve(SchemaComplexType, S
            })
 
 if(FALSE) {
-setMethod("resolve", c("SOAPTypeReference", "list"),
+setMethod("resolve", c("SchemaTypeReference", "list"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
              
              resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo)
@@ -88,7 +88,7 @@ setMethod("resolve", c("SOAPTypeReference", "list"),
 
 
 #XXX Remove.Replaced by one directly below.
-setMethod("resolve", c("SOAPTypeReference", "SchemaCollection"),
+setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
 
              if(!is.null(xrefInfo) && !is.null(xrefInfo$crossRefNames) && sprintf("%s:%s", obj@nsuri, obj@name) %in%  xrefInfo$crossRefNames) {
@@ -107,7 +107,7 @@ setMethod("resolve", c("SOAPTypeReference", "SchemaCollection"),
            })
 }
 
-setMethod("resolve", c("SOAPTypeReference", "SchemaCollection"),
+setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
 
              if(!is.null(xrefInfo) && !is.null(xrefInfo$crossRefNames) && sprintf("%s:%s", obj@nsuri, obj@name) %in%  xrefInfo$crossRefNames) {
@@ -125,14 +125,14 @@ setMethod("resolve", c("SOAPTypeReference", "SchemaCollection"),
 
                  # check if the reference is to one of the built-in types in XSD and if so, resolve it directly.
              if(obj@nsuri %in% getXSDSchemaURIs()) {
-                 return(SOAPType(obj@name, nsuri = obj@nsuri, namespaceDefs = namespaces))
+                 return(SchemaType(obj@name, nsuri = obj@nsuri, namespaceDefs = namespaces))
              }
 
 
              # find which context element corresponds to the URI we have in the object.
              i = match(obj@nsuri, names(context))
              if(is.na(i)) {
-                   stop("can't find namespace '", obj@nsuri, "' of SOAPTypeReference ", obj@name,
+                   stop("can't find namespace '", obj@nsuri, "' of SchemaTypeReference ", obj@name,
                                 " in context ", paste(names(context), collapse = ", "))
              }
 
@@ -192,7 +192,7 @@ setMethod("resolve", c("WSDLTypeDescription", "list"),
            })
 
 
-setMethod("resolve", c("PrimitiveSOAPType", "list"),
+setMethod("resolve", c("PrimitiveSchemaType", "list"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
              obj
            })
@@ -233,7 +233,7 @@ setMethod("resolve", c("character", "SchemaCollection"),
 
                 i = match(els[1], names(namespaces))
                 if(!is.na(i)) {
-                   tp = SOAPType(els[2], els[2], namespaces[[i]]$uri)
+                   tp = SchemaType(els[2], els[2], namespaces[[i]]$uri)
                    if(recursive)
                       tp = resolve(tp, context, namespaces, recursive, raiseError, xrefInfo)
                    return(tp)
@@ -282,7 +282,7 @@ setMethod("resolve", c("character", "SchemaCollection"),
 
 asQName = function(x) strsplit(x, ":")[[1]]
 
-setMethod("resolve", c("AnySOAPType", "SchemaCollection"),
+setMethod("resolve", c("AnySchemaType", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
              obj
            })
@@ -296,7 +296,7 @@ setMethod("resolve", c("SimpleSequenceType", "SchemaCollection"),
 
 
 
-setMethod("resolve", c("SOAPType", "SchemaCollection"),
+setMethod("resolve", c("SchemaType", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
                #XXX deal with the namespace.
                #!!! This will cause infinite recursion if there is no method for the specific type.
@@ -318,7 +318,7 @@ setMethod("resolve", c("SOAPType", "SchemaCollection"),
               resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo)
            })
 
-setMethod("resolve", c("SOAPType", "list"),
+setMethod("resolve", c("SchemaType", "list"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
                #XXX deal with the namespace. 
               resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo)
@@ -352,14 +352,14 @@ setMethod("resolve", c("RestrictedSetInteger", "list"),
                els = strsplit(gsub("\\[\\]", "", obj), ":")[[1]]
                if(length(els) == 2) { # array
                  if(els[1] == "xsd") {   #XXX need to match the namespace URI!
-                   return(SOAPType(els[2], els[1]))
+                   return(SchemaType(els[2], els[1]))
                  }
                   # Work with just the label, ignoring the namespace prefix.
                  els = els[2]
                } else if(length(els) == 1) {
                     # see if we are in the default namespace of XML schema
                  if(!is.na( idx <- match("", names(namespaces))) && namespaces[[ idx ]]$uri %in% getXSDSchemaURIs(all = TRUE))
-                   return(SOAPType(els, nsuri = namespaces[[ idx ]]$uri))
+                   return(SchemaType(els, nsuri = namespaces[[ idx ]]$uri))
 
                }
 
@@ -380,13 +380,13 @@ setMethod("resolve", c("RestrictedSetInteger", "list"),
                  }
 
                  if(raiseError)
-                     resolveError("Cannot resolve SOAPTypeReference ", els[1], " in list")
+                     resolveError("Cannot resolve SchemaTypeReference ", els[1], " in list")
                  else
                      return(NULL)
                }
            
                   # if there are 2 or more entries with the same name, then pick the one that isn't an Element.
-                  # i.e. get the SOAPType one.
+                  # i.e. get the SchemaType one.
                if(length(el) > 1) {
                   el = el[ !sapply(context[el], is, "Element") ]
                }
@@ -414,7 +414,7 @@ setMethod("resolve", c("RestrictedSetInteger", "list"),
                    return(NULL)
                }
               
-               if(recursive && (is(ans, "ClassDefinition") || !is(ans, "TerminalSOAPType"))) {
+               if(recursive && (is(ans, "ClassDefinition") || !is(ans, "TerminalSchemaType"))) {
 #                  cat("Calling resolve recursively for", obj, "with", class(ans), "\n")
                   ans = resolve(ans, context, namespaces, recursive, raiseError, xrefInfo)
                 }
@@ -452,7 +452,7 @@ setMethod("resolve", c("Element", "list"),
              
                    # could give infinite recursion. See msnSearch.wsdl and SearchResponse.
                    # So just look it up.
-             if(!is(obj@type, "SOAPTypeReference"))
+             if(!is(obj@type, "SchemaTypeReference"))
                 return(obj@type)
              
              ans = lookupType(obj@type@name, context)
@@ -461,7 +461,7 @@ setMethod("resolve", c("Element", "list"),
                    else
                      ans
 
-             if(recursive && is(ans, "SOAPTypeReference"))
+             if(recursive && is(ans, "SchemaTypeReference"))
                 ans = resolve(ans, context, namespaces, recursive, raiseError, xrefInfo)
              #ans
              obj@type = ans

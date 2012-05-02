@@ -36,7 +36,7 @@ setClass("GenericSchemaType", representation(name="character",
                                              documentation = "character"))
 
 
-setClass("SOAPType", representation(count = "numeric", # use numeric rather than integer because of Inf for unbounded1.
+setClass("SchemaType", representation(count = "numeric", # use numeric rather than integer because of Inf for unbounded1.
                                     abstract = "logical"
                                     ), contains = "GenericSchemaType",
                      prototype = prototype(default = NA_character_))
@@ -45,8 +45,8 @@ setClass("SOAPType", representation(count = "numeric", # use numeric rather than
  # used for a slot that has a type that is the same as the parent type being defined
  # i.e. a forward reference to the same type, e. g. ItemType in eutils.wsdl
  # or struct  Foo {  struct Foo *f;}
- # What this to extend SOAPType so we can put it into an Element
-setClass("SelfRef", contains = "SOAPType")
+ # What this to extend SchemaType so we can put it into an Element
+setClass("SelfRef", contains = "SchemaType")
 
 
 # The following are for types that involve recursive cross-references.
@@ -59,47 +59,46 @@ setClass("CrossRefClass")
 
 
 # For representing arbitrary content, e.g. <complexType/>
-setClass("AnySOAPType", contains = "SOAPType", prototype = list(name = "AnySOAPType"))
+setClass("AnySchemaType", contains = "SchemaType", prototype = list(name = "AnySchemaType"))
 
-setClass("SchemaVoidType", representation("SOAPType"),
+setClass("SchemaVoidType", representation("SchemaType"),
             prototype = list(name = "null", ns = "xsi"))
-setClass("SOAPAnyType", representation("SOAPType"))
+setClass("SchemaAnyType", representation("SchemaType"))
 
-setClass("SOAPTypeReference", representation("SOAPType"))
+setClass("SchemaTypeReference", representation("SchemaType"))
 
 
-setClass("TerminalSOAPType", representation("VIRTUAL"))
+setClass("TerminalSchemaType", representation("VIRTUAL"))
 
-setClass("BasicSOAPType", representation("SOAPType",
+setClass("BasicSchemaType", representation("SchemaType",
                                          fromConverter = "function",  # From SOAP to R
                                          toConverter = "function"))   # to SOAP from R
 
-setClassUnion("SOAPTypeOrList", c("SOAPType", "list", "NULL"))
+setClassUnion("SchemaTypeOrList", c("SchemaType", "list", "NULL"))
 
 setClass("SchemaComplexType",
-          representation(attributes = "list", content = "SOAPTypeOrList", xmlAttrs = "character"),
-          contains = "BasicSOAPType")
+          representation(attributes = "list", content = "SchemaTypeOrList", xmlAttrs = "character"),
+          contains = "BasicSchemaType")
             
 
 
 #XXX Is this a setClassUnion ?
-setClass("PrimitiveSOAPType", contains = c("BasicSOAPType", "TerminalSOAPType"))
+setClass("PrimitiveSchemaType", contains = c("BasicSchemaType", "TerminalSchemaType"))
 
-setClass("SOAPStringType", contains = "PrimitiveSOAPType")
+setClass("SchemaStringType", contains = "PrimitiveSchemaType")
 
 
-#setClass("SOAPDate", contains = "PrimitiveSOAPType")
-#setClass("SOAPDateTime", contains = "PrimitiveSOAPType")
-#setClass("SOAPTime", contains = "PrimitiveSOAPType")
+  # Should we drop the Type from the following class names.
+  #  No probably leave gYear, etc. for the actual values, not the types
+  #  See basicTypes.R setClass("gYear", contains= "integer") # "PrimitiveSchemaType")
+setClass("SchemaDateType", contains = "PrimitiveSchemaType")
+setClass("SchemaDateTimeType", contains = "PrimitiveSchemaType")
+setClass("SchemaTimeType", contains = "PrimitiveSchemaType")
 
-setClass("SOAPDateType", contains = "PrimitiveSOAPType")
-setClass("SOAPDateTimeType", contains = "PrimitiveSOAPType")
-setClass("SOAPTimeType", contains = "PrimitiveSOAPType")
+setClass("gYearType", contains = "PrimitiveSchemaType")
+setClass("gYearMonthType", contains = "PrimitiveSchemaType")
 
-setClass("gYearType", contains = "PrimitiveSOAPType")
-setClass("gYearMonthType", contains = "PrimitiveSOAPType")
 
-# See basicTypes.R setClass("gYear", contains= "integer") # "PrimitiveSOAPType")
 
 
 
@@ -109,26 +108,26 @@ setClass("SchemaTypes", representation(elementFormQualified = "logical",
                                        targetNamespace = "character",
                                        namespaceDefs = "XMLNamespaceDefinitions"), contains = "list")
 
-setClassUnion("SOAPTypeOrNULL", c("SOAPType", "NULL"))
+setClassUnion("SchemaTypeOrNULL", c("SchemaType", "NULL"))
 
 
      # xmlAttrs here are for the attributes on the XML node that we don't know how to process in place so hold on to.
      #  e.g. nillable = "true" on anyType in DailValues.asmx?wsdl
 setClass("SchemaElement", representation(name = "character",
                                          attributes = "list",
-                                         xmlAttrs = "character"), contains = "GenericSchemaType") # was BasicSOAPType - added Sep 18 as an experiment.
+                                         xmlAttrs = "character"), contains = "GenericSchemaType") # was BasicSchemaType - added Sep 18 as an experiment.
                                                                                                        # GenericSchemaType added 28 Oct.
 setClass("SimpleElement", representation(type = "character", nsuri = "character"), contains = "SchemaElement")
 
-setClassUnion("SOAPTypeOrNULLOrElement", c("SOAPTypeOrNULL", "SchemaElement"))
-setClass("Element", representation(type = "SOAPTypeOrNULLOrElement"),
+setClassUnion("SchemaTypeOrNULLOrElement", c("SchemaTypeOrNULL", "SchemaElement"))
+setClass("Element", representation(type = "SchemaTypeOrNULLOrElement"),
                      contains = "SchemaElement")
 
 setClass("LocalElement", representation(count = "numeric"), contains = "Element")
 
 
 #setClass("EnumValuesDef",  contains = "character")
-setClass("EnumValuesDef",  representation(values = "character"), contains = "SOAPType")
+setClass("EnumValuesDef",  representation(values = "character"), contains = "SchemaType")
 
 
 
@@ -136,15 +135,15 @@ setClass("EnumValuesDef",  representation(values = "character"), contains = "SOA
 setClass("XMLSchemaComponent")
 
 
-# Was SOAPType and not BasicSOAPType. But needed the fromConverter. See 
+# Was SchemaType and not BasicSchemaType. But needed the fromConverter. See 
 #   http://www.weather.gov/forecasts/xml/DWMLgen/wsdl/ndfdXML.wsdl
-setClass("RestrictedStringType", contains = "BasicSOAPType")
+setClass("RestrictedStringType", contains = "BasicSchemaType")
 #              prototype = list(ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema")))
 setClass("RestrictedStringDefinition", representation(values = "character"), contains = "RestrictedStringType")
 setClass("RestrictedStringPatternDefinition", representation(pattern = "character"), contains = "RestrictedStringType")
 
 
-setClass("RestrictedNumber", representation(range = "numeric", inclusive = "logical"), contains = "SOAPType")
+setClass("RestrictedNumber", representation(range = "numeric", inclusive = "logical"), contains = "SchemaType")
 setClass("RestrictedDouble", contains = "RestrictedNumber")
 setClass("RestrictedInteger", contains = "RestrictedNumber")
 
@@ -163,9 +162,9 @@ setClass("AttributeDef", representation(name = "character",
                          prototype = list(use = "optional"), contains = "XMLSchemaComponent")
 
 
-setClassUnion("SOAPTypeOrElement", c("SOAPType", "Element")) # Don't need if elType in SimpleSequenceType is not this union.
+setClassUnion("SchemaTypeOrElement", c("SchemaType", "Element")) # Don't need if elType in SimpleSequenceType is not this union.
 
-setClass("SimpleSequenceType", representation("BasicSOAPType", elementType = "character", elType = "SOAPTypeOrNULLOrElement")) # OrElement???
+setClass("SimpleSequenceType", representation("BasicSchemaType", elementType = "character", elType = "SchemaTypeOrNULLOrElement")) # OrElement???
 
 # White space spearated values
 setClass("ListType", contains = "SimpleSequenceType")
@@ -179,13 +178,13 @@ setClass("ArrayType", representation("SimpleSequenceType", dims = "integer"))
 
 
 # A definition for a complex data type defined in a WSDL file.
-setClass("CompositeTypeDefinition", representation("BasicSOAPType",
+setClass("CompositeTypeDefinition", representation("BasicSchemaType",
                                                     slotTypes = "list",
                                                     isAttribute = "logical", # indicates which slots are attributes.
                                                     uris = "character"), # URIs identify the namespace in which the types were defined
                                                                          # which we need as we just have the names in slotTypes,
                                                                          # along with the namespace prefix.
-                                    contains = "TerminalSOAPType")
+                                    contains = "TerminalSchemaType")
 setClass("ClassDefinition",  contains = "CompositeTypeDefinition")
 setClass("UnionDefinition", contains = "CompositeTypeDefinition")
 setClass("ArrayClassDefinition",  contains = "CompositeTypeDefinition")
@@ -193,12 +192,12 @@ setClass("ArrayClassDefinition",  contains = "CompositeTypeDefinition")
 
 # We might try to extend CompositeTypeDefinition below.
 setClass("SchemaGroupType", representation(slotTypes = "list"), contains = "CompositeTypeDefinition")
-setClass("SOAPGroupRefType", contains = "SOAPType")
+setClass("SchemaGroupRefType", contains = "SchemaType")
 
 
 
 
-setClass("RestrictedSetInteger", representation(values = "integer"), contains = "BasicSOAPType")
+setClass("RestrictedSetInteger", representation(values = "integer"), contains = "BasicSchemaType")
 
 setClass("ExtendedClassDefinition", representation(base = "character", baseType = "GenericSchemaType"), contains = "ClassDefinition")
 

@@ -62,10 +62,10 @@ XMLSchemaTypes <-
 #       "SOAPDate"   = list("xsi:type" = "xsd:date", type = "date", soapClass = "SOAPDate"),       
 #       "SOAPDateTime"   = list("xsi:type" = "xsd:dateTime", type = "dateTime", soapClass = "SOAPDateTime"),
 #       "SOAPTime"   = list("xsi:type" = "xsd:time", type = "time", soapClass = "SOAPTime"),       
-       "date"   = list("xsi:type" = "xsd:date", type = "date", soapClass = "SOAPDateType", useCoerce = TRUE,
+       "date"   = list("xsi:type" = "xsd:date", type = "date", soapClass = "SchemaDateType", useCoerce = TRUE,
                            to = function(x) format(x, "%Y-%m-%d")),       
-       "dateTime"   = list("xsi:type" = "xsd:dateTime", type = "dateTime", soapClass = "SOAPDateTimeType", useCoerce = TRUE),       
-       "time"   = list("xsi:type" = "xsd:time", type = "time", soapClass = "SOAPTimeType", useCoerce = TRUE),
+       "dateTime"   = list("xsi:type" = "xsd:dateTime", type = "dateTime", soapClass = "SchemaDateTimeType", useCoerce = TRUE),       
+       "time"   = list("xsi:type" = "xsd:time", type = "time", soapClass = "SchemaTimeType", useCoerce = TRUE),
 
        gYear = list('xsi:type' = 'xsd:gYear', type = "gYear", soapClass = "gYearType", useCoerce = TRUE),
        gYearMonth = list('xsi:type' = 'xsd:gYearMonth', type = "gYearMonth", soapClass = "gYearMonthType", useCoerce = TRUE),       
@@ -256,7 +256,7 @@ function(from)
    from
 })
 
-as.SOAPDateTime = as.SOAPDate =
+as.SOAPDateTime =  as.SOAPDate =  # not needed now?
 function(x)
 {
   if(inherits(x, "POSIXt"))
@@ -315,16 +315,16 @@ processSimpleList =
 function(type, name, namespaceDefs = NULL)
 {
   type = xmlGetAttr(type, "itemType")
-  elType = SOAPType(type, namespaceDefs = namespaceDefs)
+  elType = SchemaType(type, namespaceDefs = namespaceDefs)
   new("RestrictedListType", name = name, elType = elType, elementType = type)
 }
 
 
 
 
-mapSOAPTypeToS =
+mapSchemaTypeToS =
   #
-  # Take a SOAP type (by name or as a SOAPType object)
+  # Take a SOAP type (by name or as a SchemaType object)
   # and find the name of the R data type that it maps to 
   # so that data type can be used in, e.g., a class representation
   # e.g. "int" goes to "integer".
@@ -335,7 +335,7 @@ mapSOAPTypeToS =
 function(type, types = list(), namespaceDefs = list())
 {
    if(is(type, "Element")) {
-     return(mapSOAPTypeToS(type@type, types, namespaceDefs))
+     return(mapSchemaTypeToS(type@type, types, namespaceDefs))
    }
    
    if(is(type, "GenericSchemaType") && length(type@Rname))
@@ -349,7 +349,7 @@ function(type, types = list(), namespaceDefs = list())
        if(!is.na(type@name))
          return(type@name)
        
-       tmp = mapSOAPTypeToS(type@elType, types, namespaceDefs)
+       tmp = mapSchemaTypeToS(type@elType, types, namespaceDefs)
        if(tmp %in%  c("character", "integer", "logical", "numeric"))
          return(tmp)
        else {
@@ -373,7 +373,7 @@ function(type, types = list(), namespaceDefs = list())
     if(is(type, "AttributeDef") || is(type, "Element"))
        type = type@type
 
-     if(is(type, "SOAPTypeReference"))
+     if(is(type, "SchemaTypeReference"))
         type = resolve(type, types, namespaceDefs)
 
      if(length(type@Rname))
@@ -387,7 +387,7 @@ function(type, types = list(), namespaceDefs = list())
     }
 
     if(is(type, "UnionDefinition") && (length(type@name) == 0 || is.na(type@name) || type@name == "")) {
-        els = sapply(type@slotTypes, mapSOAPTypeToS, types = types, namespaceDefs = namespaceDefs)
+        els = sapply(type@slotTypes, mapSchemaTypeToS, types = types, namespaceDefs = namespaceDefs)
         return(paste(els, collapse= "Or"))
         
     }   
@@ -405,7 +405,7 @@ function(type, types = list(), namespaceDefs = list())
       type =  strsplit(type, ":")[[1]]
       if(length(type) == 2)  # so we have a namespace as well as the type name
                # call this function again with these two elements.
-        return(mapSOAPTypeToS(type, types, namespaceDefs))
+        return(mapSchemaTypeToS(type, types, namespaceDefs))
     }
 
     if(length(type) == 2) {
@@ -416,7 +416,7 @@ function(type, types = list(), namespaceDefs = list())
     if(length(grep("^ArrayOf", type)) > 0 && type %in% unlist(c(sapply(types, names)))) {
         # just give back the name of the R type (to be)
       return(type)
-      # return(mapSOAPTypeToS(gsub("^ArrayOf", "", type), types, namespaceDefs))
+      # return(mapSchemaTypeToS(gsub("^ArrayOf", "", type), types, namespaceDefs))
     }
 
     if(is.na(type)) 

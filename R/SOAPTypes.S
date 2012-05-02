@@ -1,9 +1,9 @@
 
-SOAPType =
+SchemaType = SOAPType =
   #
-  # Map a name such as xsd:string or xsd:date to a SOAPType object
+  # Map a name such as xsd:string or xsd:date to a SchemaType object
   #
-function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(), obj = new("SOAPTypeReference"), targetNamespace = "") # was SOAPType
+function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(), obj = new("SchemaTypeReference"), targetNamespace = "") # was SchemaType
 {
   if(is.null(name)) 
     return(new("SchemaVoidType"))
@@ -46,7 +46,7 @@ function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(), 
     which = sapply(XMLSchemaTypes, function(x) name == x[["type"]])
     if(any(which)) {
        k = XMLSchemaTypes[[which(which)]][["soapClass"]]
-       obj = new(if(!is.null(k)) k else "PrimitiveSOAPType")
+       obj = new(if(!is.null(k)) k else "PrimitiveSchemaType")
        funName = paste("as", names(XMLSchemaTypes)[which], sep=".")
        if(!exists(funName))
          funName = names(XMLSchemaTypes)[which]
@@ -68,7 +68,7 @@ function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(), 
      # Should check that this is referring to the target namespace of the
      # document, e.g. targetNamespace and xmlns:[targetNamespace] in the root node
 #XXX
-     # obj = new("SOAPTypeReference")
+     # obj = new("SchemaTypeReference")
   }
 
   obj@name = name

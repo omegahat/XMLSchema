@@ -34,7 +34,7 @@ function(id, root)
 setGeneric("fromXML", function(node, root = NULL, converters = SchemaPrimitiveConverters,
                                 append = TRUE, type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node))
                        {
-	                    if(is(type, "BasicSOAPType") && length(formals(type@fromConverter)))
+	                    if(is(type, "BasicSchemaType") && length(formals(type@fromConverter)))
                               return(type@fromConverter(node))
 
                            standardGeneric("fromXML")
@@ -75,7 +75,7 @@ setMethod("fromXML", c("XMLAbstractNode", type = "ArrayType"),
 
 if(FALSE) {
   # Take out for now.
-setMethod("fromXML", c("character", "PrimitiveSOAPType"),
+setMethod("fromXML", c("character", "PrimitiveSchemaType"),
           function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRUE,
                     type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node))
           {
@@ -88,7 +88,7 @@ setMethod("fromXML", c("character", "PrimitiveSOAPType"),
 # setOldClass("XMLNode")
 
 setMethod("fromXML",
-          c(node = "XMLAbstractNode", type = "PrimitiveSOAPType"), 
+          c(node = "XMLAbstractNode", type = "PrimitiveSchemaType"), 
           function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRUE,
                     type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node)) {
 
@@ -210,7 +210,7 @@ function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRU
   }
 
   
-   # This should now be done in the method for PrimitiveSOAPType
+   # This should now be done in the method for PrimitiveSchemaType
    # but we leave it here as it may get called from a path such as
    # for dates, etc.
   which <- match(type, names(converters))
@@ -283,7 +283,7 @@ parseArrayType =
 function(type, ns = character(), namespaces = list(), obj = new("ArrayType"),  targetNamespace = NA, elementFormDefault = NA)
 {
   if(is.null(type) || length(type) == 0 || is.na(type) || type == "") {
-     obj@elType = new("SOAPAnyType")
+     obj@elType = new("SchemaAnyType")
      return(obj)
   }
           
@@ -319,7 +319,7 @@ function(type, ns = character(), namespaces = list(), obj = new("ArrayType"),  t
    # rather than a list of ArrayTypes.
 
     # Done here, and skip the last command - old version.
-  elType = SOAPType(gsub("\\[.*$", "", type), namespaceDefs = namespaces)
+  elType = SchemaType(gsub("\\[.*$", "", type), namespaceDefs = namespaces)
 
   obj@elType = elType
   obj@elementType = typeName
@@ -381,7 +381,7 @@ function(node, type = NULL, root = NULL, converters = SchemaPrimitiveConverters,
     classDef = getClassDef(paste("ArrayOf", type@name, sep = ""))
   }
 
-  if(is(type, "PrimitiveSOAPType")) {
+  if(is(type, "PrimitiveSchemaType")) {
     type = if(length(type@ns) && nchar(type@ns[1])) paste(type@ns, type@name, sep = ":") else type@name
 #XXX
     type = gsub("^soapenc:", "xsd:", type)
@@ -485,12 +485,12 @@ setGeneric("fromSOAPStruct",
 
 #
 # We want to allow users to provide methods to control things.
-# But we just have a SOAPType as the target. So if we create an instance of this
+# But we just have a SchemaType as the target. So if we create an instance of this
 # and have methods defined for those types, then we will get the regular S4 dispatch.
 #
 
 
-setMethod("fromSOAPStruct", c("ANY", type = "SOAPType"),
+setMethod("fromSOAPStruct", c("ANY", type = "SchemaType"),
 function(node, root = NULL, converters = SchemaPrimitiveConverters, type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node)) {
    fromSOAPStruct(node, root, converters, type@name, multiRefs, namespaces)
 })

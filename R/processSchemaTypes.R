@@ -82,7 +82,7 @@ function(node, doc, namespaceDefs = gatherNamespaceDefs(node), createConverters 
                       if(is.null(o))
                          next
                       
-                      if(FALSE && createConverters && is(o, "BasicSOAPType"))
+                      if(FALSE && createConverters && is(o, "BasicSchemaType"))
                          o@fromConverter = createSOAPConverter(o, ans)
 
                       ans[[i]] <- o
@@ -109,7 +109,7 @@ function(node, doc, namespaceDefs = gatherNamespaceDefs(node), createConverters 
  #names(types) = sapply(types, function(x) x$name)
  # types
 
-      # if we have a collection of SOAPTypes, turn them into a SchemaTypes object
+      # if we have a collection of SchemaTypes, turn them into a SchemaTypes object
       # and if we have a collection of exclusively SchemaTypes  (i.e. separate Schema)
       # make a SchemaCollection. In between where we have separate types and
       # one or more schemas (containing types), we leave as is for now, i.e. just a list.
@@ -217,7 +217,7 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
 
 
    if(xmlName(type) == "any")  #XXX check the namespace
-       return(new("AnySOAPType"))
+       return(new("AnySchemaType"))
 
 
    if(xmlName(type) == "group")  #XXX check the namespace
@@ -259,12 +259,12 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
     ref = if(length(refNode) == 0) {
              # lookup the ref in the basic types
              # NULL
-           mapSOAPTypeToS(xmlGetAttr(type, "type"))
+           mapSchemaTypeToS(xmlGetAttr(type, "type"))
           } else {
              processSchemaType(refNode[[1]], types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
           }
     if(is.character(ref))
-       ref = SOAPType(xmlGetAttr(type, "type"), namespaceDefs = namespaceDefs)
+       ref = SchemaType(xmlGetAttr(type, "type"), namespaceDefs = namespaceDefs)
     return(new("Element", name = name, type = ref, targetNamespace = as.character(targetNamespace))) #XXX  attributes = ref@attributes,
     
   } else if(name == "simpleType" || xmlName(type) == "simpleType") {
@@ -282,7 +282,7 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
               def = createRestrictedStringDefinition(type, name)
            } else {
 #             if(xmlGetAttr(type, "name", "") == "NUMBER") browser()
-              tp = SOAPType(base[2], base[1], count = getElementCount(type), namespaceDefs = namespaceDefs)
+              tp = SchemaType(base[2], base[1], count = getElementCount(type), namespaceDefs = namespaceDefs)
               
               def = if(length(getNodeSet(type[[1]], "./*"))) {  # xmlSize(type[[1]])) {
 
@@ -307,13 +307,13 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
          #   <xs:restriction base="xs:string"/>
          # </xs:simpleType>
          def = new("ExtendedClassDefinition", name = name, base = xmlGetAttr(type[[1]], "base"),
-                       baseType = SOAPType(xmlGetAttr(type[[1]], "base"), namespaceDefs = namespaceDefs))
+                       baseType = SchemaType(xmlGetAttr(type[[1]], "base"), namespaceDefs = namespaceDefs))
        }
    } else if(xmlSize(type) > 0 && xmlName(type[[1]]) == "list") {
 
        if(xmlSize(type[[1]]) > 0) {
           el = processSchemaType(type[[1]][[1]], types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
-          def = SOAPType(name, count = getElementCount(type), obj = new("RestrictedListType"), namespaceDefs = namespaceDefs)
+          def = SchemaType(name, count = getElementCount(type), obj = new("RestrictedListType"), namespaceDefs = namespaceDefs)
           def@elType = el
           if(is(el, "EnumValuesDef"))  # And is a string
               def@elements = el@values
@@ -327,7 +327,7 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
       u = type[[1]]
       tp = xmlGetAttr(u, "memberTypes", "")
       tp = strsplit(tp, "[[:space:]]+")[[1]]
-      els = lapply(tp, SOAPType, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace)
+      els = lapply(tp, SchemaType, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace)
     
       types = lapply(xmlChildren(u), processSchemaType, types = types, localElements = TRUE, targetNamespace = targetNamespace, namespaceDefs = namespaceDefs, localElements = TRUE)
        
@@ -373,7 +373,7 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
       
   } else if(xmlName(type) == "complexType" && xmlSize(type) == 0) {
           #??? What do we do here.  See "http://www.ebi.ac.uk/ebisearch/service.ebi?wsdl" for example.
-    return(new("AnySOAPType", name = if(name != "") name else "AnySOAPType"))
+    return(new("AnySchemaType", name = if(name != "") name else "AnySchemaType"))
   } else if(xmlName(type) == "complexType" && xmlName(type[[1]]) == "all")
     tmp = type
   else if(xmlName(type) == "complexType" &&
@@ -395,7 +395,7 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
       }
       
 
-      if(!is(seq, "ClassDefinition") && (is(seq, "Element") || is(seq, "SOAPGroupRefType") || is(seq, "SimpleSequenceType"))) 
+      if(!is(seq, "ClassDefinition") && (is(seq, "Element") || is(seq, "SchemaGroupRefType") || is(seq, "SimpleSequenceType"))) 
              seq = new("ClassDefinition", name = name, slotTypes = structure(list(seq), names = computeName(seq))) #XXX fill in the rest.
                
        seq@slotTypes = structure(append(seq@slotTypes, els[-1]),
@@ -470,7 +470,7 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
                                   if(length(tt) == 0) {
                                      tt = xmlGetAttr(x, "ref")
                                   }
-                                  SOAPType(tt, namespaceDefs = namespaceDefs, count = getElementCount(a))
+                                  SchemaType(tt, namespaceDefs = namespaceDefs, count = getElementCount(a))
                                })
 
      names(slotTypes) = xmlSApply(a, getElementName)
@@ -494,7 +494,7 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
                     # Need to resolve the type if it is not a primitive.
                     # XXX also want the minOccurs and maxOccurs
 
-      def = SOAPType(name, counts = getElementCount(type), obj = new("SchemaComplexType"), namespaceDefs = namespaceDefs)
+      def = SchemaType(name, counts = getElementCount(type), obj = new("SchemaComplexType"), namespaceDefs = namespaceDefs)
       def@xmlAttrs = as(xmlAttrs(type), "character")
       def@content = processSequence(tmp, types, namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault)
       def@attributes = lapply(xmlChildren(type)[names(type) == "attribute"], processAttribute, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE, types = types)
@@ -634,7 +634,7 @@ function(node, types, namespaceDefs, name = "",  targetNamespace = NA, elementFo
    ref = xmlGetAttr(node, "ref")
    if(!is.null(ref)) {
        els = strsplit(ref, ":")[[1]]
-       ans = new("SOAPGroupRefType")
+       ans = new("SchemaGroupRefType")
     } else {
        name = xmlGetAttr(node, "name")
        els = strsplit(name, ":")[[1]]
@@ -704,7 +704,7 @@ function(node, types, namespaceDefs, name = "",  targetNamespace = NA, elementFo
       
         # Want to find the namespaces to identify the origin of the definition
         # in case of ambiguities and  also built-in types.
-     # If getType resolves the SOAPType, then we 
+     # If getType resolves the SchemaType, then we 
      #      uris = getTypeNamespace(slotTypes, tmp)
      #      uris = sapply(slotTypes, function(x) x@nsuri)
 #XXX
@@ -783,7 +783,7 @@ function(node, keepNS = FALSE, ...)
     gsub(".*:", "", ans)
 })
 
-setMethod("getElementName", "AnySOAPType",
+setMethod("getElementName", "AnySchemaType",
   #
   # And defined differently again!!!
   #
@@ -835,7 +835,7 @@ function(node, types, namespaceDefs = list(), name = getElementName(node), targe
      count = getElementCount(node[[1]])
      
      
-      #??? We have  changed SimpleSequenceType to allow an element or a SOAPType in elType.
+      #??? We have  changed SimpleSequenceType to allow an element or a SchemaType in elType.
 
      
      if(any(count > 1) ) {
@@ -845,11 +845,11 @@ function(node, types, namespaceDefs = list(), name = getElementName(node), targe
         ans@nsuri = as.character(targetNamespace)
      
           # ??? where should it be - on the sequence or the element(s)
-        if(is(ans@elType, "SOAPType"))
+        if(is(ans@elType, "SchemaType"))
              ans@elType@count = ans@count
                                    
 
-        if(is(ans@elType, "SOAPType") && all(!is.na(ans@elType@count)) && all(ans@elType@count %in% c(0, 1))) {
+        if(is(ans@elType, "SchemaType") && all(!is.na(ans@elType@count)) && all(ans@elType@count %in% c(0, 1))) {
           # if the sequence has a single element and the minOccurs and maxOccurs are both 1,
           # then return just the element.
         #XXX have to be careful that we recognize that the content is within the outer node given by name
@@ -863,12 +863,12 @@ function(node, types, namespaceDefs = list(), name = getElementName(node), targe
    }
 
 
-     # Build a SOAPType for each of the slots.
+     # Build a SchemaType for each of the slots.
      # ??? Should we use processSchemaType
 if(FALSE) {  
   slotTypes = xmlApply(node, function(x) {
                               typeName =  xmlGetAttr(x, "type", xmlGetAttr(x, "ref"))
-                              SOAPType(typeName,
+                              SchemaType(typeName,
                                        nsuri = lookupNamespace(typeName, x),
                                        namespaceDefs = namespaceDefs,
                                        count = getElementCount(x))
@@ -1034,7 +1034,7 @@ function(obj, default = obj@default)
   if(is(obj, "Element"))
     return(optionalDefaultValue(obj@type, default))
 
-  if(is(obj, "SOAPType") && length(obj@count) > 0 && 0 %in% obj@count) {
+  if(is(obj, "SchemaType") && length(obj@count) > 0 && 0 %in% obj@count) {
      if(is(obj, "SimpleSequenceType"))
          NULL
      else
@@ -1072,8 +1072,8 @@ function(id, node, types = NULL, namespaceDefs = list(), targetNamespace = NA, l
 
     # if there is no name, but just a ref, don't we want to control how we generate this.
 
-   tp = SOAPType(name = els[2], els[1],
-                   nsuri = uri, namespaceDefs = namespaceDefs) # new("SOAPTypeReference", name = els[2], nsuri = uri, ns = els[1])
+   tp = SchemaType(name = els[2], els[1],
+                   nsuri = uri, namespaceDefs = namespaceDefs) # new("SchemaTypeReference", name = els[2], nsuri = uri, ns = els[1])
 
    if(FALSE && length(types))
      tp = resolve(tp, types)
@@ -1158,7 +1158,7 @@ if(FALSE) {
 
 
    if(is.character(type))
-     type = SOAPType(type, namespaceDefs = namespaceDefs)
+     type = SchemaType(type, namespaceDefs = namespaceDefs)
    
    new("AttributeDef", name = name,
                        type = type,
@@ -1265,7 +1265,7 @@ function(type, name, types, namespaceDefs, targetNamespace = NA, elementFormDefa
      baseType = NULL
 
      if(is.null(baseType))
-         baseType = SOAPType(base, namespaceDefs = namespaceDefs) # resolve(base, types, namespaceDefs)
+         baseType = SchemaType(base, namespaceDefs = namespaceDefs) # resolve(base, types, namespaceDefs)
 
        # start with no slot types.
      def = ClassDef(name, list(), obj = new("ExtendedClassDefinition"))
@@ -1320,7 +1320,7 @@ function(name, types, namespaceDefs = list(), getType = TRUE, node = NULL)
            if(is.na(u))
                u = xmlSearchNs(node, u, asPrefix = FALSE)
 
-           new("SOAPTypeReference", nsuri = u, ns = id[1], name = name)
+           new("SchemaTypeReference", nsuri = u, ns = id[1], name = name)
         }
      } else {
         igetSchemaType(id, types)
@@ -1342,7 +1342,7 @@ function(name, schema, getType = TRUE)
      return(schema[[ i[!is.na(i)] ]])
 
   types = schema[!is.na(i)]
-  w = ! sapply(types, inherits, c("Element", "SOAPTypeReference"))
+  w = ! sapply(types, inherits, c("Element", "SchemaTypeReference"))
 if(!any(w))
   warning("Ooops")
   types[[w]]

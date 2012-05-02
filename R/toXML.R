@@ -1,5 +1,5 @@
 #
-# This creates code based on the SOAPType to convert an R object to an XML node.
+# This creates code based on the SchemaType to convert an R object to an XML node.
 #
 setGeneric("toXML",
            function(type, types, namespaceDefs = NULL, env = getNamespace("XML"))

@@ -34,7 +34,7 @@ BaseClassName = "VirtualXMLSchemaClass" # "VirtualSOAPClass"
 
 defineClasses =
   #
-  # namespaceDefs is used in mapSOAPTypeToS as the third argument.
+  # namespaceDefs is used in mapSchemaTypeToS as the third argument.
   #
 function(types,  where = globalenv(), namespaceDefs = list(), verbose = FALSE,
           baseClass = BaseClassName, force = FALSE, opts = new("CodeGenOpts"),
@@ -67,7 +67,7 @@ setMethod("computeName", "AttributeDef",
             function(type, ...)
                type@name)
 
-setMethod("computeName", "SOAPType",
+setMethod("computeName", "SchemaType",
             function(type, ...) {
               id = type@name
               if(length(id) == 0 || is.na(id) || id == "") stop("Problem with empty name")
@@ -80,7 +80,7 @@ setMethod("computeName", "SimpleSequenceType",
               sprintf("ListOf%s", id)
         })
 
-setMethod("computeName", "SOAPType",
+setMethod("computeName", "SchemaType",
             function(type, ...) {
               type@name
         })
@@ -160,7 +160,7 @@ function(i, where = globalenv(),
     if(is.null(i))
       return(FALSE)
 
-    if(is(i, "SOAPTypeReference"))
+    if(is(i, "SchemaTypeReference"))
        i = resolve(i, types, namespaceDefs, recursive = TRUE, xrefInfo = types@circularDefs)    
     
     if(is(i, "SchemaTypes"))
@@ -204,10 +204,10 @@ function(i, where = globalenv(),
     
     if(!is.null(def)) {
 
-      if(is(type, "BasicSOAPType") && length(formals(type@fromConverter)) > 0) {
+      if(is(type, "BasicSchemaType") && length(formals(type@fromConverter)) > 0) {
         if(verbose)
             cat("defining setAs() for", type@name, "\n")
-        if(is(type@fromConverter, "SOAPElementConverter"))
+        if(is(type@fromConverter, "SchemaElementConverter"))
            cvt = as(type@fromConverter, "AsFunction")
         else
            cvt = type@fromConverter
@@ -295,7 +295,7 @@ if(showDefClassTrace)
          type = i
 
   
-         if(is(i, "AnySOAPType")) {
+         if(is(i, "AnySchemaType")) {
              if(verbose)
                  cat("defining", name, "\n")
              setClass(name, where = where)
@@ -358,7 +358,7 @@ if(showDefClassTrace)
 if(verbose) cat("<defClass>element", type@name, "\n")
 
 if(TRUE) {
-           tmp = if(class(i@type) %in% c("SOAPType", "SOAPTypeReference"))
+           tmp = if(class(i@type) %in% c("SchemaType", "SchemaTypeReference"))
                      resolve(i@type, types)
                  else
                     i@type
@@ -381,9 +381,9 @@ if(TRUE) {
                             classes = classes, pending = pending, baseClass = baseClass, opts = opts, namespaceDefs = namespaceDefs)
          } else if(is(i, "SimpleElement")) {
             warning("defClass: no code to handle ", class(i), " for ", i@name)#XXX fix this.
-         } else if(is(i, "PrimitiveSOAPType")) {
+         } else if(is(i, "PrimitiveSchemaType")) {
             # no problem, these are built-in
-         } else if(class(i) == "SOAPType") {
+         } else if(class(i) == "SchemaType") {
               tmp = resolve(i, types, namespaceDefs)
               defClass(tmp, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, name, ignorePending, opts)
          } else {
@@ -458,7 +458,7 @@ setMethod("defClass", "AttributeDef",
 
 
 
-setMethod("defClass", "SOAPTypeReference",
+setMethod("defClass", "SchemaTypeReference",
           function(i, where = globalenv(),
                    namespaceDefs = list(),
                    verbose = FALSE,
@@ -513,10 +513,10 @@ function(pattern, name)
   }
 }
 
-setClass("SOAPElementConverter", contains = "function")
+setClass("SchemaElementConverter", contains = "function")
 setClass("AsFunction", contains = "function")
 
-setAs("SOAPElementConverter", "AsFunction",
+setAs("SchemaElementConverter", "AsFunction",
        function(from) {
          params = formals(from)
          formals(from) = alist(from =)
@@ -549,7 +549,7 @@ function(i, types, namespaceDefs, name, classes, pending, baseClass, where = glo
 
          # Handle any SchemaGroupType and make certain those classes are defined and then
          # use them as base classes to extend and remove from the slotTypes.
-     isGroup = sapply(i@slotTypes, is, "SOAPGroupType")
+     isGroup = sapply(i@slotTypes, is, "SchemaGroupType")
      if(any(isGroup)) {
        extraBaseClasses = sapply(i@slotTypes[isGroup], computeName)
        forceClassDefs(extraBaseClasses, i@slotTypes[isGroup], types, namespaceDefs, where, classes = classes, baseClass = baseClass,
@@ -596,7 +596,7 @@ function(i, types, namespaceDefs, name, classes, pending, baseClass, where = glo
      if(is(i, "ExtendedClassDefinition")) {
 
        baseType = resolve(i@baseType, types)
-       xbaseClass = mapSOAPTypeToS(baseType, types = types)
+       xbaseClass = mapSchemaTypeToS(baseType, types = types)
        if(is.null(getClassDef(xbaseClass))) {
 
 #         w = sapply(types, function(x) xbaseClass %in% names(x))
@@ -697,7 +697,7 @@ orig = type
           default
   } else if(is(type, "ArrayType")) {
 
-     if(is(type@elType, "PrimitiveSOAPType")) {
+     if(is(type@elType, "PrimitiveSchemaType")) {
         coerceArgumentCode(id, type@elType)
      } else {
           # Or we could go straight to R nodes
@@ -715,20 +715,20 @@ setGeneric("getRClassName",
            function(id, ns, types)
             standardGeneric("getRClassName"))
 
-setMethod("getRClassName", "SOAPType",
-  # See mapSOAPTypeToS
+setMethod("getRClassName", "SchemaType",
+  # See mapSchemaTypeToS
 function(id, ns, types)
 {
     id@name
 })
 
 setMethod("getRClassName", "character",
-  # See mapSOAPTypeToS
+  # See mapSchemaTypeToS
 function(id, ns, types)
 {
   #XXX Deal with the builtin types in XSD
   if(!is.na(ns) && ns %in% getXSDSchemaURIs(all = TRUE)) {
-    mapSOAPTypeToS(id)
+    mapSchemaTypeToS(id)
   } else {
      q = asQName(id)
      q[length(q)]
@@ -755,14 +755,14 @@ function(type, types = NULL, nsURI = rep(NA, length(type)),
 # R name and then we could just look that up.
 # Some types will be anonymous and so not be in the already defined.  
    #elTypes = mapply(getRClassName, slotTypes)
-   elTypes = mapply(mapSOAPTypeToS, slotTypes, MoreArgs = list(types = types) )
+   elTypes = mapply(mapSchemaTypeToS, slotTypes, MoreArgs = list(types = types) )
 
    klasses = forceClassDefs(elTypes, slotTypes, types, namespaceDefs, where, verbose = verbose,
                              force = force, pending = pending, classes = classes, baseClass = baseClass, opts = opts)
 
   if(all(sapply(slotTypes, is, "SimpleSequenceType"))) {
     def =  setClass(name, contains = "list", where = where)
-    elTypes = sapply(slotTypes , function(x) mapSOAPTypeToS(x@elType, types = types))
+    elTypes = sapply(slotTypes , function(x) mapSchemaTypeToS(x@elType, types = types))
     f = function(object) {
       XMLSchema:::checkHomogeneousList(object, elTypes)
     }
@@ -1005,10 +1005,10 @@ createClassRepresentation =
  # 
 function(type, types, namespaceDefs = list())
 {
-   repn = lapply(type@slotTypes, mapSOAPTypeToS, types, namespaceDefs)
+   repn = lapply(type@slotTypes, mapSchemaTypeToS, types, namespaceDefs)
    nas = sapply(repn, is.na)
    if(any(nas))
-     stop("problem resolving SOAP type ", names(type)[nas], class = "ResolveSOAPType")
+     stop("problem resolving SOAP type ", names(type)[nas], class = "ResolveSchemaType")
 
    repn 
 }
@@ -1085,7 +1085,7 @@ function(repn, slots, base = NA, className = NA, defaults = NULL)
         return(NULL)
     }
   
-#    str = sapply(slots, function(x) is(x, "PrimitiveSOAPType") && x@name == "string")
+#    str = sapply(slots, function(x) is(x, "PrimitiveSchemaType") && x@name == "string")
 
     base = base[1]
     
