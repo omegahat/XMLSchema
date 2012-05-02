@@ -6,12 +6,12 @@ exportClass(VirtualXMLSchemaClass)
 
 
 # Should go back to SSOAP or be renamed.
-exportClass(SOAPType)
-exportClasses("SOAPTypeReference", "BasicSOAPType", "SchemaVoidType")
+exportClass(SchemaType)
+exportClasses("SchemaTypeReference", "BasicSchemaType", "SchemaVoidType")
 
 exportClasses(StringEnum)
 
-export(SOAPType)
+export(SchemaType, SOAPType)  # XXX kil off SOAPType
 export(as.SOAPDateTime, as.SOAPDate)
 exportClass(ID, NCName)
 exportClasses(gYear, gYearMonth)
@@ -59,7 +59,7 @@ exportMethods(createSOAPConverter)
 export(coerceListToS4)
 exportMethods(coerce)
 
-export(mapSOAPTypeToS)
+export(mapSchemaTypeToS)
 
 
 exportClasses(SchemaCollection, SchemaTypes)
