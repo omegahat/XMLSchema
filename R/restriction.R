@@ -11,14 +11,22 @@ function(name, rnode, namespaces = list(), targetNamespace = NA, base = xmlGetAt
       r = getRestrictedRange(rnode)
       className = switch(base, double = "RestrictedDouble", integer = "RestrictedInteger")
       def = new(className, name = name, range = r$range, inclusive = r$inclusive)
+
+         # make the converter
+      def@fromConverter =  makeValueFromConverter(def@name)
+      def@toConverter =  makeValueToConverter(def@name, targetNamespace)      
+      
    } else if (base == "hexBinary") {
       if("length" %in% names(rnode))
         len = xmlGetAttr(rnode[["length"]], "value", NA)
       else
         len = NA
-      rx = if(!is.na(len)) sprintf("([a-fA-F0-9]{2}){%d}", as.integer(len)) else "([a-fA-F]){2}"
+      rx = if(!is.na(len)) sprintf("^([a-fA-F0-9]{2}){%d}$", as.integer(len)) else "^([a-fA-F]){2}$"
       
-      def = new("RestrictedHexBinary", length = as.integer(len), pattern = rx)
+      def = new("RestrictedHexBinary", length = as.integer(len), pattern = rx, name = name)
+
+      def@fromConverter = makeValueFromConverter(def@name)
+      def@toConverter = makeValueToConverter(def@name, targetNamespace)      
 
    } else {
                                         #XXX Assume enumeration values for present.
@@ -28,7 +36,7 @@ function(name, rnode, namespaces = list(), targetNamespace = NA, base = xmlGetAt
 
 
      if(base == "string")
-        def = createRestrictedStringDefinition(rnode, name)
+        def = createRestrictedStringDefinition(rnode, name, targetNamespace)
      else
         def <- new("EnumValuesDef", name = name, values = xmlSApply(rnode,  xmlGetAttr, "value"))
      if(length(name) == 0)  #XXX
@@ -104,4 +112,94 @@ function(className, base, range, inc)
    environment(f) = globalenv()
    
    f
+}
+
+
+
+createRestrictedStringDefinition =
+function(type, name, nsuri = character())
+{
+  if(xmlName(type) != "restriction")
+    res = type[[1]]
+  else
+    res = type
+  
+           #This is wrong!
+           # new("EnumValuesDef", name = name, values = xmlSApply(type[[1]],  xmlGetAttr, "value"))
+#  kids = xmlChildren(type[[1]])[ ! xmlSApply(type[[1]], is, "XMLInternalTextNode") ]
+  if(xmlName(res) != "restriction") 
+    warning("createRestrictedStringDefinition passed a node ", xmlName(res), " that is not a <restriction> node")
+
+
+  
+  kids = res[ ! xmlSApply(res, is, "XMLInternalTextNode") ]
+  names = sapply(kids, xmlName)
+
+  if(all(names == "enumeration")) {
+    vals = if(length(kids))
+              sapply(kids,  xmlGetAttr, "value")
+            else
+              character()
+#     fun = function(from) as(from, name)
+#     body(fun)[[3]] = name
+     fun = function(from) new(name, xmlValue(from))
+     body(fun)[[2]] = name    
+     environment(fun) = DefaultFunctionNamespace
+
+      # need the namespace on the node.
+     toFun = makeValueToConverter(name, nsuri, DefaultFunctionNamespace)
+    
+     new("RestrictedStringDefinition", name = name, values = vals,
+                  ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema"),
+                  toConverter = toFun,
+                  fromConverter = fun)
+  } else {
+
+    if(any(names == "pattern")) {
+       pattern = xmlGetAttr((kids[names(kids) == "pattern"])[[1]], "value")
+       pattern = sprintf("^%s$", pattern)
+       def = new("RestrictedStringPatternDefinition", name = name, pattern = pattern,
+                     ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema"))
+       def@fromConverter = function(from) {
+                              if(is(from, "XMLAbstractNode"))
+                                 from = xmlValue(from)
+                              as(from, "character")
+                           }
+       environment(def@fromConverter) = DefaultFunctionNamespace
+       
+       epattern = paste("^", pattern, "$", sep = "")
+       def@toConverter = function(from, epattern = "") {
+                             x = as(from, "character")
+                             if(length(grep(epattern, x)) == 0)
+                               stop("Invalid string: doesn't match expected pattern")
+                             x
+                         }
+          # clean up the environment.
+       environment(def@toConverter) = DefaultFunctionNamespace
+       formals(def@toConverter)[["epattern"]] = epattern
+       
+       def
+    }
+  }
+}
+
+makeValueFromConverter =
+function(className)
+{
+    fun = function(from)  {}
+    body(fun)[[2]] = substitute(as(xmlValue(from), name), list(name = className))
+    environment(fun) = globalenv()
+    fun
+}
+
+makeValueToConverter =
+function(nodeName, namespace = character(), env = globalenv())
+{
+  toFun = function(from) newXMLNode(name, as.character(from))
+  body(toFun)[[2]] = nodeName
+  if(length(namespace) && !is.na(namespace))
+       body(toFun)[["namespaceDefinitions"]] = namespace
+  environment(toFun) = env
+
+  toFun
 }

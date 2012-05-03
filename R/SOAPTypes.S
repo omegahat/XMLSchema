@@ -3,7 +3,8 @@ SchemaType = SOAPType =
   #
   # Map a name such as xsd:string or xsd:date to a SchemaType object
   #
-function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(), obj = new("SchemaTypeReference"), targetNamespace = "") # was SchemaType
+function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(),
+          obj = new("SchemaTypeReference"), targetNamespace = "") # was SchemaType
 {
   if(is.null(name)) 
     return(new("SchemaVoidType"))
@@ -41,18 +42,27 @@ function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(), 
 
       #XXXX if we don't know the mapping of xsd (and xsi?) at run time
       # let them pass through here!
-  if(length(nsuri) && !is.na(name) && nsuri %in% c(getXSDSchemaURIs(all = TRUE), "xsd", "http://schemas.xmlsoap.org/soap/encoding/")) {
+  if(length(nsuri) && !is.na(name) &&
+          nsuri %in% c(getXSDSchemaURIs(all = TRUE), "xsd", "http://schemas.xmlsoap.org/soap/encoding/")) {
        # tmp = paste(ns, name, sep=":")
     which = sapply(XMLSchemaTypes, function(x) name == x[["type"]])
     if(any(which)) {
-       k = XMLSchemaTypes[[which(which)]][["soapClass"]]
+       i = which(which)[1]
+       k = XMLSchemaTypes[[ i ]][["soapClass"]]
        obj = new(if(!is.null(k)) k else "PrimitiveSchemaType")
-       funName = paste("as", names(XMLSchemaTypes)[which], sep=".")
+
+          # Look for converter. These will conver the value, not the XML node
+       funName = paste("as", names(XMLSchemaTypes)[ i ], sep=".")
        if(!exists(funName))
-         funName = names(XMLSchemaTypes)[which]
+           funName = names(XMLSchemaTypes)[ i ]
        if(exists(funName))
-         obj@toConverter = get(funName)
-       tmp = XMLSchemaTypes[which][[1]]
+           obj@toConverter = get(funName)
+       tmp = XMLSchemaTypes[[ i ]]
+       obj@Rname = names(XMLSchemaTypes)[ i ]
+
+       if(obj@Rname == "string") #XXXX
+          obj@Rname = "character"
+       
        if("from" %in% names(tmp)) {
 
            if(is.character(tmp$from)) {
@@ -75,6 +85,8 @@ function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(), 
   obj@ns = ns
   obj@nsuri = nsuri
   obj@count = counts
+  if(length(obj@Rname) == 0) # XXX Do we definitely know this.
+    obj@Rname = name
 
   obj
 }

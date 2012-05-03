@@ -135,7 +135,6 @@ function(i, where = globalenv(),
          name = getName(i),
          ignorePending = FALSE, opts = new("CodeGenOpts"))
 {
-
     orig = i
 
     if(is.null(i))
@@ -509,7 +508,7 @@ function(pattern, name)
      if(grepl(pattern, object))
         TRUE
      else
-       paste("%s doesn't match pattern %s for class %s", object, pattern, name)
+       sprintf("%s doesn't match pattern %s for class %s", object, pattern, name)
   }
 }
 
@@ -1138,14 +1137,18 @@ function(i, where = globalenv(),
    setAs(base, i@name, f, where = where)
    setAs("character", i@name, f, where = where)
 
-   fun = function(from)  {}
-
-   body(fun)[[2]] = substitute(as(xmlValue(from), name), list(name = i@name))
-   setAs("XMLAbstractNode", i@name, fun, where = where)
+   if(length(body(i@fromConverter)))
+      setAs("XMLAbstractNode", i@name, i@fromConverter, where = where)
+   else {
+       fun = function(from)  {}
+       body(fun)[[2]] = substitute(as(xmlValue(from), name), list(name = i@name))
+      setAs("XMLAbstractNode", i@name, fun, where = where)       
+   }
+   # make a fromXML method
 #   fun = function (node, root = NULL, converters = SchemaPrimitiveConverters, 
 #              append = TRUE, type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node))
 #   body(fun)[[2]] = substitute(as(xmlValue(node), name), list(name = i@name))
-#   setMethod("fromXML", c("XMLAbstractNode"), fun, where = where)
+#   setMethod("fromXML", c("XMLAbstractNode", "missing"), fun, where = where)
               
    def
 })
@@ -1168,7 +1171,7 @@ function(i, where = globalenv(),
       def = setClass(i@name, contains = "character", where = where)
       valid = function(object) {
                  if(!grepl(pattern, object))
-                   paste("doesn't match pattern of", len, "0-0A-F pairs")
+                    paste("doesn't match pattern of", len, "hexadecimal values (i.e. pairs xy where x, y are values from 0-9A-F")
                  else
                     TRUE
               }
@@ -1189,6 +1192,40 @@ function(i, where = globalenv(),
        environment(fun) = DefaultFunctionNamespace
       
       setAs("character", i@name, fun, where = where)
+   
+      def
+  })
+
+
+
+setMethod("defClass", "RestrictedListType",
+function(i, where = globalenv(),
+         namespaceDefs = list(),
+         verbose = FALSE,
+         pending = new.env(hash = TRUE, emptyenv()),
+         classes = new.env(hash = TRUE, emptyenv()),
+         types = NULL,
+         baseClass = BaseClassName, force = FALSE,
+         name = getName(i),
+         ignorePending = FALSE, opts = new("CodeGenOpts"))
+  {
+    # ensure the element type is defined.
+ defClass(i@elType, where, namespaceDefs, verbose, pending, classes, types,
+           baseClass, force, name = getName(i@elType), ignorePending, opts)
+ 
+    #XXX Get the base type based on the type of the element restriction.
+      def = setClass(i@name, contains = i@baseType, where = where)
+
+      valid = function(object) {
+                 if(!all(sapply(object, is, elName)))
+                    stop("not all elements are of type ", elName)
+                 else
+                   TRUE
+              }
+      body(valid)[[2]][[2]][[2]][[2]][[4]] = i@elType@Rname
+      body(valid)[[2]][[3]][[3]] = i@elType@Rname      
+
+      setValidity(i@name, valid, where = where)
    
       def
   })

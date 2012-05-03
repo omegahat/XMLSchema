@@ -6,3 +6,9 @@ all = unlist(unlist(schema, recursive = FALSE), recursive = FALSE)
 table(sapply(all, class))
 
 
+XMLSchema:::defClass(all[["orderidtype"]])
+
+try(new("orderidtype", "bob"))
+
+
+

@@ -32,7 +32,8 @@ function(x) {
 # See the tree at the top of section 3.2 of the document above.
 
 XMLSchemaTypes <-
-  list("character" = list("xsi:type" = "xsd:string", type = "string"),
+  list(# "character" = list("xsi:type" = "xsd:string", type = "string"),
+       "string" = list("xsi:type" = "xsd:string", type = "string", soapClass = "SchemaStringType"),       
        "normalizedCharacter" = list("xsi:type" = "xsd:string", type = "normalizedString"),
        
        "numeric"   = list("xsi:type" = "xsd:float", type = "float"),
@@ -315,8 +316,22 @@ processSimpleList =
 function(type, name, namespaceDefs = NULL)
 {
   type = xmlGetAttr(type, "itemType")
+if(name == "itemIconStateType") browser()
   elType = SchemaType(type, namespaceDefs = namespaceDefs)
-  new("RestrictedListType", name = name, elType = elType, elementType = type)
+  def = new("RestrictedListType", name = name, elType = elType, elementType = type)
+  if(is(elType, "PrimitiveSchemaType")) {
+    if(length(elType@Rname) == 0)
+        browser() #XXX
+    def@baseType = elType@Rname #
+  }
+  
+  # if the elType is a primitive, use xmlSApply to make a vector.
+  fun = function(from) new(name, xmlApply(from, as, typeName))
+  body(fun)[[2]] = def@name  
+  body(fun)[[3]][[4]] = elType@name
+  def@fromConverter = fun
+
+  def
 }
 
 

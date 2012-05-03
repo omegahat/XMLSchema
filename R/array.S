@@ -88,11 +88,6 @@ setMethod("fromXML", c("character", "PrimitiveSchemaType"),
 # setOldClass("XMLNode")
 
 setMethod("fromXML",
-          c(node = "XMLAbstractNode", type = "RestrictedDouble") {
-              as(node, type@name)
-          })
-
-setMethod("fromXML",
           c(node = "XMLAbstractNode", type = "PrimitiveSchemaType"), 
           function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRUE,
                     type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node)) {
@@ -578,3 +573,11 @@ function(node,  typeName, root = NULL, converters = SchemaPrimitiveConverters, m
   class(val) <- gsub("^[a-zA-Z]+:", "", typeName)
   val  
 }  
+
+
+setMethod("fromXML", c(node = "XMLAbstractNode", root = "missing", type = "RestrictedDouble"),
+          function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRUE,
+                    type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node)) {
+              as(node, type@name)
+          })
+

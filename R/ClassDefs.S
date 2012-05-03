@@ -12,6 +12,7 @@ DefaultFunctionNamespace = getNamespace("XML")
 #???  should this be in another package, e.g. XML?
 setClass("URI", contains = "character")
 
+setClass("string", contains = "character")
 
 ################################################################
 
@@ -86,8 +87,8 @@ setClass("SchemaTypeReference", representation("SchemaType"))
 setClass("TerminalSchemaType", representation("VIRTUAL"))
 
 setClass("BasicSchemaType", representation("SchemaType",
-                                         fromConverter = "function",  # From SOAP to R
-                                         toConverter = "function"))   # to SOAP from R
+                                         fromConverter = "function",  # From XML to R
+                                         toConverter = "function"))   # to XML from R
 
 setClassUnion("SchemaTypeOrList", c("SchemaType", "list", "NULL"))
 
@@ -100,7 +101,9 @@ setClass("SchemaComplexType",
 #XXX Is this a setClassUnion ?
 setClass("PrimitiveSchemaType", contains = c("BasicSchemaType", "TerminalSchemaType"))
 
-setClass("SchemaStringType", contains = "PrimitiveSchemaType")
+setClass("SchemaStringType", contains = "PrimitiveSchemaType",
+           prototype = list(name = "string", Rname = "string",
+                            fromConverter = function(from) xmlValue(from)))
 
 
   # Should we drop the Type from the following class names.
@@ -158,7 +161,7 @@ setClass("RestrictedStringDefinition", representation(values = "character"), con
 setClass("RestrictedStringPatternDefinition", representation(pattern = "character"), contains = "RestrictedStringType")
 
 
-setClass("RestrictedNumber", representation(range = "numeric", inclusive = "logical"), contains = "SchemaType")
+setClass("RestrictedNumber", representation(range = "numeric", inclusive = "logical"), contains = "BasicSchemaType")
 setClass("RestrictedDouble", contains = "RestrictedNumber")
 setClass("RestrictedInteger", contains = "RestrictedNumber")
 
@@ -183,8 +186,11 @@ setClass("SimpleSequenceType", representation("BasicSchemaType", elementType = "
 
 # White space spearated values
 setClass("ListType", contains = "SimpleSequenceType")
-setClass("RestrictedListType", representation(elements = "character"),  # is elements somehow already in elType and elementType
-                               contains = "ListType")
+setClass("RestrictedListType", representation(elements = "character",  # is elements somehow already in elType and elementType
+                                              baseType = "character"), # baseType - either list or a vector type, e.g. character,
+                                                                       #       numeric, integer, logical
+                               contains = "ListType",
+                            prototype = list(baseType = "list"))
 
                                               
 setClass("ArrayType", representation("SimpleSequenceType", dims = "integer"))

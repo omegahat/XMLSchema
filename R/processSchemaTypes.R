@@ -313,7 +313,8 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
    } else if(xmlSize(type) > 0 && xmlName(type[[1]]) == "list") {
 
        if(xmlSize(type[[1]]) > 0) {
-          el = processSchemaType(type[[1]][[1]], types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
+          el = processSchemaType(type[[1]][[1]], types, namespaceDefs = namespaceDefs,
+                                   targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
           def = SchemaType(name, counts = getElementCount(type), obj = new("RestrictedListType"), namespaceDefs = namespaceDefs)
           def@elType = el
           if(is(el, "EnumValuesDef"))  # And is a string
@@ -1204,57 +1205,6 @@ function(doc)
               group = sapply(groups, xmlGetAttr, "substitutionGroup"))
 }
 
-createRestrictedStringDefinition =
-function(type, name)
-{
-           #This is wrong!
-           # new("EnumValuesDef", name = name, values = xmlSApply(type[[1]],  xmlGetAttr, "value"))
-  kids = xmlChildren(type[[1]])[ ! xmlSApply(type[[1]], is, "XMLInternalTextNode") ]
-
-  names = sapply(kids, xmlName)
-
-  if(all(names == "enumeration")) {
-    vals = if(length(kids))
-              sapply(kids,  xmlGetAttr, "value")
-            else
-              character()
-     fun = function(from) new(name, from)
-     body(fun)[[2]] = name
-     environment(fun) = DefaultFunctionNamespace
-     toFun = function(from) as.character(from)
-     environment(toFun) = DefaultFunctionNamespace
-     new("RestrictedStringDefinition", name = name, values = vals,
-                  ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema"),
-                  toConverter = toFun,
-                  fromConverter = fun)
-  } else {
-
-    if(any(names == "pattern")) {
-       pattern = xmlGetAttr((kids[names(kids) == "pattern"])[[1]], "value")
-       def = new("RestrictedStringPatternDefinition", name = name, pattern = pattern,
-                     ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema"))
-       def@fromConverter = function(from) {
-                              if(is(from, "XMLAbstractNode"))
-                                 from = xmlValue(from)
-                              as(from, "character")
-                           }
-       environment(def@fromConverter) = DefaultFunctionNamespace
-       
-       epattern = paste("^", pattern, "$", sep = "")
-       def@toConverter = function(from, epattern = "") {
-                             x = as(from, "character")
-                             if(length(grep(epattern, x)) == 0)
-                               stop("Invalid string: doesn't match expected pattern")
-                             x
-                         }
-          # clean up the environment.
-       environment(def@toConverter) = DefaultFunctionNamespace
-       formals(def@toConverter)[["epattern"]] = epattern
-       
-       def
-    }
-  }
-}
 
 
 processExtension =

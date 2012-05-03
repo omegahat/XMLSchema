@@ -9,6 +9,11 @@
   *    Use a different base class when defining new classes. This avoids the need to 
        load the SSOAP package before calling defineClasses.
 
+  *    RestrictedNumber type and sub-classes carry their own fromConverter and toConverter functions
+       as the base class is BasicSchemaType.
+
+  *    Define setAs("XMLAbstractNode", .) for RestrictedNumber types.
+
 0.7-0
  
   *    Compute default values for slots of new class from schema elements to handle
