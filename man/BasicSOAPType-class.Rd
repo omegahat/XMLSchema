@@ -1,12 +1,12 @@
 \name{BasicSOAPType-class}
 \docType{class}
 \alias{GenericSchemaType-class}
-\alias{BasicSOAPType-class}
-\alias{SOAPType-class}
-\alias{SOAPTypeReference-class}
-\alias{SOAPVoidType-class}
-\alias{SOAPTypeOrList-class}
-\alias{SOAPTypeOrNULL-class}
+\alias{BasicSchemaType-class}
+\alias{SchemaType-class}
+\alias{SchemaTypeReference-class}
+\alias{SchemaVoidType-class}
+\alias{SchemaTypeOrList-class}
+\alias{SchemaTypeOrNULL-class}
 \alias{NMTOKEN-class}
 \alias{NCName-class}
 \alias{date-class}
@@ -68,12 +68,12 @@
   }
 }
 \section{Extends}{
-Class \code{"\linkS4class{SOAPType}"}, directly.
-Class \code{"\linkS4class{SOAPTypeOrList}"}, by class "SOAPType", distance 2.
-Class \code{"\linkS4class{SOAPTypeOrNULL}"}, by class "SOAPType", distance 2.
+Class \code{"\linkS4class{SchemaType}"}, directly.
+Class \code{"\linkS4class{SchemaTypeOrList}"}, by class "SchemaType", distance 2.
+Class \code{"\linkS4class{SchemaTypeOrNULL}"}, by class "SchemaType", distance 2.
 }
 \section{Methods}{
-No methods defined with class "BasicSOAPType" in the signature.
+No methods defined with class "BasicSchemaType" in the signature.
 }
 \references{
 }
@@ -84,6 +84,6 @@ No methods defined with class "BasicSOAPType" in the signature.
   \code{\link{processSchemaTypes}}.
 }
 \examples{
-showClass("BasicSOAPType")
+
 }
 \keyword{classes}

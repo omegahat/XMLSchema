@@ -1,5 +1,5 @@
 Package: XMLSchema
-Version: 0.7-0
+Version: 0.8-0
 Title:  R facilities to read XML schema 
 Author:  Duncan Temple Lang <duncan@wald.ucdavis.edu>
 Depends: R (>= 1.5.0), methods, XML
@@ -12,7 +12,7 @@ Description: A package that reads XML schema into an R representation
   that describe Web Services and use XML schema.
 LazyLoad: yes
 Imports: RCurl, codetools
-License: GPL2
+License: GPL-2
 Collate:  ClassDefs.S processSchemaTypes.R SOAPTypes.S resolve.R genCode.R parseSchema.R 
      createConverters.R schema.R array.S basicTypes.R utils.R selfRefs.R enums.R restriction.R
      makeSchemaCollection.R gatherNamespaceDefs.R targetNamespace.R fixTypeNames.R serialize.R

@@ -11,7 +11,7 @@ exportClasses("SchemaTypeReference", "BasicSchemaType", "SchemaVoidType")
 
 exportClasses(StringEnum)
 
-export(SchemaType, SOAPType)  # XXX kil off SOAPType
+export(SchemaType) #, SOAPType)  # XXX kil off SOAPType
 export(as.SOAPDateTime, as.SOAPDate)
 exportClass(ID, NCName)
 exportClasses(gYear, gYearMonth)

@@ -85,7 +85,7 @@ function(def, file = stdout(), where = globalenv())
       if(!is.null(m)) {
          cat(sprintf("setAs('%s', %s,\n", type, sQuote(className)), file = file)
          m = as(m, "function")
-         if(length(vars <- ls(environment(m), all = TRUE)) > 0 && !identical(environment(m), globalenv())) {
+         if(length(vars <- ls(environment(m), all.names = TRUE)) > 0 && !identical(environment(m), globalenv())) {
 #           browser()
             warning("removing environment from coercion method with objects ", paste(vars, collapse = ", "))
           }
@@ -150,7 +150,7 @@ function(fun)
   if(is.null(e) || identical(e, globalenv()) || identical(e, emptyenv()))
     return(fun)
   
-  vars = ls(e, all = TRUE)
+  vars = ls(e, all.names = TRUE)
 
   vars = intersect(vars, findGlobals(fun, FALSE)$variables)
   

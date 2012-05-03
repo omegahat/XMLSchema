@@ -1,3 +1,14 @@
+0.8-0
+
+  *    Changed names of classes, functions and methods with SOAP in them to Schema
+       to better reflect the generality of the package and independence from SOAP.
+
+  *    Synchronize code for creating RestrictedStringDefinition and so avoid an EnumValuesDef
+       object.
+
+  *    Use a different base class when defining new classes. This avoids the need to 
+       load the SSOAP package before calling defineClasses.
+
 0.7-0
  
   *    Compute default values for slots of new class from schema elements to handle

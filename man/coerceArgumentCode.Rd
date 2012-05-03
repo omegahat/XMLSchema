@@ -19,7 +19,7 @@ coerceArgumentCode(id, type)
 }
 \arguments{
   \item{id}{the name of the variable to be coerced}
-  \item{type}{the \code{\link{SOAPType-class}} describing the XML schema
+  \item{type}{the \code{\link{SchemaType-class}} describing the XML schema
     type expected. }
 }
 \value{
@@ -31,13 +31,13 @@ coerceArgumentCode(id, type)
 
 }
 \examples{
-  tt = SOAPType("int", nsuri = "http://www.w3.org/2001/XMLSchema", obj = new("PrimitiveSOAPType"))
+  tt = SchemaType("int", nsuri = "http://www.w3.org/2001/XMLSchema", obj = new("PrimitiveSchemaType"))
   coerceArgumentCode("x", tt)
 
-  tt = SOAPType("string", nsuri = "http://www.w3.org/2001/XMLSchema", obj = new("PrimitiveSOAPType"))
+  tt = SchemaType("string", nsuri = "http://www.w3.org/2001/XMLSchema", obj = new("PrimitiveSchemaType"))
   coerceArgumentCode("x", tt)
 
-  tt = SOAPType("Hybrid", nsuri = "http://www.w3.org/2001/XMLSchema", obj = new("SOAPType"))
+  tt = SchemaType("Hybrid", nsuri = "http://www.w3.org/2001/XMLSchema", obj = new("SchemaType"))
   coerceArgumentCode("x", tt)
 }
 \keyword{programming}

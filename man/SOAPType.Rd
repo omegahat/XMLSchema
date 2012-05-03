@@ -1,14 +1,15 @@
 \name{SOAPType}
-\alias{SOAPType}
-\title{Creates a SOAPType object}
+\alias{SchemaType}
+%\alias{SOAPType}
+\title{Creates a SchemaType object}
 \description{
   This is a constructor function for filling in the
-  general/common details  of the \code{\link{SOAPType-class}}
+  general/common details  of the \code{\link{SchemaType-class}}
   objects.
 }
 \usage{
-SOAPType(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(),
-          obj = new("SOAPTypeReference"), targetNamespace = "")
+SchemaType(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(),
+          obj = new("SchemaTypeReference"), targetNamespace = "")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -33,11 +34,11 @@ SOAPType(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(),
 }
 \author{Duncan Temple Lang}
 \seealso{
-  \code{\link{SOAPType-class}}
+  \code{\link{SchemaType-class}}
   \code{\link{processSchemaTypes}}
   \code{\link{readSchema}}  
 }
 \examples{
-  SOAPType("foo", count = c(1, Inf))
+  SchemaType("foo", count = c(1, Inf))
 }
 \keyword{programming}

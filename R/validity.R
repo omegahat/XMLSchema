@@ -48,7 +48,7 @@ function(types, varName = 'object', asFunction = TRUE)
    return(k)
   
  f = function(object) {
-        x
+        object
      }
  environment(f) = globalenv()
  body(f)[[2]] = k

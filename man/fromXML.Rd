@@ -6,8 +6,8 @@
 \alias{fromXML,ANY,ANY,ANY,ANY,character-method}
 \alias{fromXML,ANY,ANY,ANY,ANY,missing-method}
 \alias{fromXML,XMLAbstractNode,ANY,ANY,ANY,ArrayType-method}
-\alias{fromXML,ANY,ANY,ANY,ANY,SOAPVoidType-method}
-\alias{fromXML,XMLAbstractNode,ANY,ANY,ANY,PrimitiveSOAPType-method}
+\alias{fromXML,ANY,ANY,ANY,ANY,SchemaVoidType-method}
+\alias{fromXML,XMLAbstractNode,ANY,ANY,ANY,PrimitiveSchemaType-method}
 \alias{fromXML,XMLAbstractNode,ANY,ANY,ANY,ClassDefinition-method}
 \alias{fromXML,XMLAbstractNode,ANY,ANY,ANY,NULL-method}
 \alias{fromXML,NULL,ANY,ANY,ANY,ANY-method}
@@ -17,7 +17,7 @@
 \title{Convert an XML node to an R type}
 \description{
   Convert an XML node representing
-  a SOAP value to an S object.
+  a Schema value to an S object.
   The different functions handle different
   types of SOAP objets.
   This also works on an XML string or filename.

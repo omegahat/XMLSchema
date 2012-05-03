@@ -7,7 +7,7 @@
 \alias{createSOAPConverter,RestrictedListType-method}
 \alias{createSOAPConverter,RestrictedStringDefinition-method}
 \alias{createSOAPConverter,SimpleSequenceType-method}
-\alias{createSOAPConverter,SOAPComplexType-method}
+\alias{createSOAPConverter,SchemaComplexType-method}
 \alias{createSOAPConverter,UnionDefinition-method}
 \alias{createSOAPConverter,SchemaCollection-method}
 \alias{createSOAPConverter,SimpleElement-method}
@@ -23,7 +23,7 @@
 createSOAPConverter(type, namespaces, defs = NULL, types = list(), ...)
 }
 \arguments{
-  \item{type}{the description of the SOAP type}
+  \item{type}{the description of the Schema type}
   \item{namespaces}{appears not to be used}
   \item{defs}{appears to be never used.}
   \item{types}{the descriptions of other data types in the schema(s)}

@@ -261,7 +261,8 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
              # NULL
            mapSchemaTypeToS(xmlGetAttr(type, "type"))
           } else {
-             processSchemaType(refNode[[1]], types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
+             processSchemaType(refNode[[1]], types, namespaceDefs = namespaceDefs,
+                                targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
           }
     if(is.character(ref))
        ref = SchemaType(xmlGetAttr(type, "type"), namespaceDefs = namespaceDefs)
@@ -282,7 +283,7 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
               def = createRestrictedStringDefinition(type, name)
            } else {
 #             if(xmlGetAttr(type, "name", "") == "NUMBER") browser()
-              tp = SchemaType(base[2], base[1], count = getElementCount(type), namespaceDefs = namespaceDefs)
+              tp = SchemaType(base[2], base[1], counts = getElementCount(type), namespaceDefs = namespaceDefs)
               
               def = if(length(getNodeSet(type[[1]], "./*"))) {  # xmlSize(type[[1]])) {
 
@@ -313,7 +314,7 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
 
        if(xmlSize(type[[1]]) > 0) {
           el = processSchemaType(type[[1]][[1]], types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
-          def = SchemaType(name, count = getElementCount(type), obj = new("RestrictedListType"), namespaceDefs = namespaceDefs)
+          def = SchemaType(name, counts = getElementCount(type), obj = new("RestrictedListType"), namespaceDefs = namespaceDefs)
           def@elType = el
           if(is(el, "EnumValuesDef"))  # And is a string
               def@elements = el@values
@@ -470,7 +471,7 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
                                   if(length(tt) == 0) {
                                      tt = xmlGetAttr(x, "ref")
                                   }
-                                  SchemaType(tt, namespaceDefs = namespaceDefs, count = getElementCount(a))
+                                  SchemaType(tt, namespaceDefs = namespaceDefs, counts = getElementCount(a))
                                })
 
      names(slotTypes) = xmlSApply(a, getElementName)

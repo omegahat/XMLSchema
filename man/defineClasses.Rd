@@ -3,26 +3,26 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{Define R classes corresponding to XML schema types}
 \description{
-  This function maps \code{\link{SOAPType-class}}
+  This function maps \code{\link{SchemaType-class}}
   objects describing XML schema types to R class definitions
   within the existing R session.
 }
 \usage{
 defineClasses(types, where = globalenv(), namespaceDefs = list(),
-               verbose = FALSE, baseClass = "VirtualSOAPClass", force = FALSE,
+               verbose = FALSE, baseClass = BaseClassName, force = FALSE,
                opts = new("CodeGenOpts"),
                 pending = new.env(hash = TRUE, emptyenv()),
                 classes = new.env(hash = TRUE, emptyenv()))
 }
 \arguments{
-  \item{types}{a list of \code{\link{SOAPType-class}} objects
+  \item{types}{a list of \code{\link{SchemaType-class}} objects
    describing the XML schema types.}
   \item{where}{the environment in which the new R class definitions
     should be defined and assigned. This is passed as the value of
     the \code{where} parameter in the call to \code{\link[methods]{setClass}}.}
   \item{namespaceDefs}{a character vector giving the \code{prefix = URI}
     pairs which are used to compare the namespaces in the
-    \code{\link{SOAPType-class}} objects with those in the standard
+    \code{\link{SchemaType-class}} objects with those in the standard
     schema, i.e. XSD.
   }
   \item{verbose}{a logical value indicating whether to emit messages on
@@ -36,7 +36,7 @@ defineClasses(types, where = globalenv(), namespaceDefs = list(),
     XML schema's annotation nodes.
   }
   \item{force}{a logical value.  By default, if there is an existing R class 
-    with a name corresponding to a \code{\link{SOAPType-class}} object,
+    with a name corresponding to a \code{\link{SchemaType-class}} object,
     this function does not redefine it.
     This means that when one runs the function a second time, the
     classes are not redefined. To override this, use \code{force = TRUE}.

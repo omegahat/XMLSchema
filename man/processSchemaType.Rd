@@ -64,7 +64,7 @@ processSchemaTypes(node, doc = xmlDoc(node), namespaceDefs = gatherNamespaceDefs
 
 }
 \value{
- \code{processSchemaType} returns an object derived from \code{SOAPType}.
+ \code{processSchemaType} returns an object derived from \code{SchemaType}.
 
  \code{processSchemaTypes} returns a list.
 }

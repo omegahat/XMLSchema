@@ -3,7 +3,7 @@
 
 \alias{coerce,Base64Encoded,character-method}
 \alias{coerce,Base64Encoded,raw-method}
-\alias{coerce,SOAPElementConverter,AsFunction-method}
+\alias{coerce,SchemaElementConverter,AsFunction-method}
 \alias{coerce,character,NMTOKEN-method}
 \alias{coerce,character,XMLTypeConverter-method}
 \alias{coerce,integer,Base64Encoded-method}

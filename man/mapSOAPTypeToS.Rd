@@ -1,5 +1,5 @@
 \name{mapSOAPTypeToS}
-\alias{mapSOAPTypeToS}
+\alias{mapSchemaTypeToS}
 \title{Determine name of R class for an XML data type description}
 \description{
   This class is used to map a description of an XML schema type
@@ -9,7 +9,7 @@
   the types of the slots for a new class class definition.
 }
 \usage{
-mapSOAPTypeToS(type, types = list(), namespaceDefs = list())
+mapSchemaTypeToS(type, types = list(), namespaceDefs = list())
 }
 \arguments{
   \item{type}{an instance of a class derived from
@@ -32,10 +32,10 @@ Duncan Temple Lang
 
 \examples{
  def = new("ClassDefinition", name = "Foo",
-                              slotTypes = list(a = new("PrimitiveSOAPType",  name = "string"),
-                                               b = new("PrimitiveSOAPType",  name = "float") ))               
+                              slotTypes = list(a = new("PrimitiveSchemaType",  name = "string"),
+                                               b = new("PrimitiveSchemaType",  name = "float") ))               
 
-  mapSOAPTypeToS(def)
+  mapSchemaTypeToS(def)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

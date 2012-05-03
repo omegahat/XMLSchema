@@ -3,17 +3,17 @@
 \alias{resolve}
 \alias{resolve,ArrayType,list-method}
 \alias{resolve,AttributeDef,list-method}
-\alias{resolve,BasicSOAPType,list-method}
+\alias{resolve,BasicSchemaType,list-method}
 \alias{resolve,ClassDefinition,list-method}
 \alias{resolve,Element,ANY-method}
 \alias{resolve,EnumValuesDef,list-method}
-\alias{resolve,PrimitiveSOAPType,list-method}
-\alias{resolve,SOAPType,SchemaCollection-method}
-\alias{resolve,SOAPType,list-method}
-\alias{resolve,SOAPTypeReference,SchemaCollection-method}
-\alias{resolve,SOAPTypeReference,list-method}
-\alias{resolve,SOAPVoidType,ANY-method}
-\alias{resolve,SOAPVoidType,SchemaCollection-method}
+\alias{resolve,PrimitiveSchemaType,list-method}
+\alias{resolve,SchemaType,SchemaCollection-method}
+\alias{resolve,SchemaType,list-method}
+\alias{resolve,SchemaTypeReference,SchemaCollection-method}
+\alias{resolve,SchemaTypeReference,list-method}
+\alias{resolve,SchemaVoidType,ANY-method}
+\alias{resolve,SchemaVoidType,SchemaCollection-method}
 \alias{resolve,SimpleElement,ANY-method}
 \alias{resolve,WSDLTypeDescription,list-method}
 \alias{resolve,character,SchemaCollection-method}
@@ -26,15 +26,15 @@
 \alias{resolve,RestrictedSetInteger,list-method}
 \alias{resolve,RestrictedStringPatternDefinition,SchemaCollection-method}
 \alias{resolve,UnionDefinition,SchemaCollection-method}
-\alias{resolve,AnySOAPType,SchemaCollection-method}
+\alias{resolve,AnySchemaType,SchemaCollection-method}
 \alias{resolve,AttributeDef,SchemaCollection-method}
 \alias{resolve,LocalElement,list-method}
 \alias{resolve,SelfRef,SchemaCollection-method}
 \alias{resolve,character,SchemaTypes-method}
 \alias{resolve,XMLAbstractNode,ANY,ANY,ANY,Element-method}
 \alias{resolve,XMLAbstractNode,ANY,ANY,ANY,SimpleSequenceType-method}
-\alias{resolve,AnySOAPType,SchemaCollection-method}
-\alias{resolve,SOAPComplexType,SchemaCollection-method}
+\alias{resolve,AnySchemaType,SchemaCollection-method}
+\alias{resolve,SchemaComplexType,SchemaCollection-method}
 
 \title{Lookup the definition of a type by name}
 \description{
@@ -65,7 +65,7 @@ resolve(obj, context, namespaces = character(), recursive = TRUE,
     functions that call resolve.}
 }
 \value{
- An object of class \code{\link{SOAPType-class}}.
+ An object of class \code{\link{SchemaType-class}}.
 }
 \author{Duncan Temple Lang}
 \seealso{
