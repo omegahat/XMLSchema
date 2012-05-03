@@ -88,6 +88,11 @@ setMethod("fromXML", c("character", "PrimitiveSchemaType"),
 # setOldClass("XMLNode")
 
 setMethod("fromXML",
+          c(node = "XMLAbstractNode", type = "RestrictedDouble") {
+              as(node, type@name)
+          })
+
+setMethod("fromXML",
           c(node = "XMLAbstractNode", type = "PrimitiveSchemaType"), 
           function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRUE,
                     type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node)) {
@@ -175,6 +180,8 @@ function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRU
   if(is.character(type)) {
     if(type %in% names(converters))
        return(converters[[type]](xmlValue(node)))
+    else
+      return(as(node, type))
   }
 
   

@@ -1,5 +1,16 @@
 
+W3SchemaURIs =
+list( "1.1" =
+        c('xsi'="http://www.w3.org/1999/XMLSchema-instance",
+          'xsd'="http://www.w3.org/1999/XMLSchema"),
+      "1.2" =
+       c( 'xsi'="http://www.w3.org/2001/XMLSchema-instance",
+          'xsd'="http://www.w3.org/2001/XMLSchema"))
+
 DefaultFunctionNamespace = getNamespace("XML")
+
+#???  should this be in another package, e.g. XML?
+setClass("URI", contains = "character")
 
 
 ################################################################
@@ -37,7 +48,7 @@ setClass("GenericSchemaType", representation(name="character",
 
 
 setClass("SchemaType", representation(count = "numeric", # use numeric rather than integer because of Inf for unbounded1.
-                                    abstract = "logical"
+                                      abstract = "logical"
                                     ), contains = "GenericSchemaType",
                      prototype = prototype(default = NA_character_))
 
@@ -59,13 +70,17 @@ setClass("CrossRefClass")
 
 
 # For representing arbitrary content, e.g. <complexType/>
-setClass("AnySchemaType", contains = "SchemaType", prototype = list(name = "AnySchemaType"))
+#XXX What is the difference between this and SchemaAnyType
+setClass("AnySchemaType", contains = "SchemaType",
+            prototype = list(name = "AnySchemaType", nsuri = W3SchemaURIs[['1.2']]["xsd"], Rname = "ANY"))
 
 setClass("SchemaVoidType", representation("SchemaType"),
             prototype = list(name = "null", ns = "xsi"))
-setClass("SchemaAnyType", representation("SchemaType"))
+setClass("SchemaAnyType", representation("SchemaType"),
+            prototype = list(name = "any", nsuri = W3SchemaURIs[['1.2']]["xsd"], Rname = "ANY"))
 
 setClass("SchemaTypeReference", representation("SchemaType"))
+
 
 
 setClass("TerminalSchemaType", representation("VIRTUAL"))

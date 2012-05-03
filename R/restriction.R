@@ -67,10 +67,10 @@ function(className, base, range, inc)
 
    f = function(from) {
          from = as(from, base)
-         if(from <= range["min"])
+         if(length(from) && from <= range["min"])
              stop("")
 
-         if(from >= range["max"])
+         if(length(from) && from >= range["max"])
              stop("")
          
          new(className, from)

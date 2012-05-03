@@ -140,7 +140,7 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
              ans = resolve(ans, context, namespaces, recursive, FALSE, xrefInfo)
 
           
-               if(is.null(ans) &&  substring(obj@name, 1, 7) == "ArrayOf") {
+               if(is.null(ans) && length(obj@name) && !is.na(obj@name) && substring(obj@name, 1, 7) == "ArrayOf") {
                   elementType = substring(obj@name, 8)
 
                   ans = new("SimpleSequenceType",

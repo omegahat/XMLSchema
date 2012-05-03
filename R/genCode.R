@@ -527,16 +527,27 @@ setAs("SchemaElementConverter", "AsFunction",
          from
        })
        
-
-getDefaultValue =
-function(type)
+setGeneric("getDefaultValue",
+                function(type, ...)
+                  standardGeneric("getDefaultValue"))
+setMethod("getDefaultValue", "ANY",
+function(type, ...)
 {
  #XXX remove this when we compute the default correctly earlier when creating the type descriptions.
 #    if(0 %in% type@count)
 #       vector(class(type@default), 0)
 #    else
       type@default
-}
+})
+
+setMethod("getDefaultValue", "ClassDefinition",
+            function(type, ...) {
+                NULL
+            })
+setMethod("getDefaultValue", "LocalElement", 
+            function(type, ...) {
+                getDefaultValue(type@type)
+            })
 
 defineClassDefinition =
 function(i, types, namespaceDefs, name, classes, pending, baseClass, where = globalenv(), verbose = FALSE, force = FALSE, extendList = FALSE,
@@ -641,15 +652,6 @@ function(name, representation = list(), where = globalenv())
 }
 
 
-
-
-W3SchemaURIs =
-list( "1.1" =
-        c('xsi'="http://www.w3.org/1999/XMLSchema-instance",
-          'xsd'="http://www.w3.org/1999/XMLSchema"),
-      "1.2" =
-       c( 'xsi'="http://www.w3.org/2001/XMLSchema-instance",
-          'xsd'="http://www.w3.org/2001/XMLSchema"))
 
 getXSDSchemaURIs =
 function(version = "1.2", all = FALSE) {
@@ -1092,7 +1094,7 @@ function(repn, slots, base = NA, className = NA, defaults = NULL)
     str = sapply(repn, function(x) x == "character")
     
     
-   if(!all(nas <- sapply(defaults, function(x) is.null(x) || (length(x) == 1 && is.na(x))))) {
+   if(!all(nas <- sapply(defaults, function(x) is.null(x) || length(x) == 0 || (length(x) == 1 && is.na(x))))) {
 
        values =  mapply(as, defaults[!nas], repn[!nas], SIMPLIFY = FALSE)
       # values[ names(str)[str & nas] ] = ""
@@ -1134,7 +1136,17 @@ function(i, where = globalenv(),
    f = makeRestrictedFunc(i@name, base, i@range, i@inclusive)
 
    setAs(base, i@name, f, where = where)
-   setAs("character", i@name, f, where = where)   
+   setAs("character", i@name, f, where = where)
+
+   fun = function(from)  {}
+
+   body(fun)[[2]] = substitute(as(xmlValue(from), name), list(name = i@name))
+   setAs("XMLAbstractNode", i@name, fun, where = where)
+#   fun = function (node, root = NULL, converters = SchemaPrimitiveConverters, 
+#              append = TRUE, type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node))
+#   body(fun)[[2]] = substitute(as(xmlValue(node), name), list(name = i@name))
+#   setMethod("fromXML", c("XMLAbstractNode"), fun, where = where)
+              
    def
 })
 

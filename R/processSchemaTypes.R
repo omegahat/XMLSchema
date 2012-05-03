@@ -1158,8 +1158,12 @@ if(FALSE) {
     }
 
 
-   if(is.character(type))
-     type = SchemaType(type, namespaceDefs = namespaceDefs)
+   if(is.character(type)) {
+      if(!is.na(type))
+         type = SchemaType(type, namespaceDefs = namespaceDefs)
+      else
+         type = new("SchemaStringType")  # should this be a simple string or a SchemaAnyType. 
+    }
    
    new("AttributeDef", name = name,
                        type = type,
