@@ -61,7 +61,8 @@ and be there solely to avoid typos.
 <item status="done">
 remove the kml.xml file in inst/samples/
 <br/>
-o</item>
+in notes/
+</item>
 
 <item>
 defineClass(pmmlSchema) fails.
