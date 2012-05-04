@@ -8,7 +8,7 @@ function(filename, createConverters = FALSE, verbose = FALSE,
          followImports = TRUE,
          followIncludes = followImports,
          asNode = is(filename, "XMLInternalNode") && (is(filename, "AsIs") || xmlName(filename) == "schema"),
-         checkCircularTypes = TRUE, ...)
+         checkCircularTypes = TRUE, simplify = FALSE, ...)
 {
   doc = if(is.character(filename))
           parseSchemaDoc(filename, namespaces = namespaces, followImports, followIncludes)
@@ -29,8 +29,14 @@ function(filename, createConverters = FALSE, verbose = FALSE,
   }
 
   tns = xmlGetAttr(node, "targetNamespace", NA)
-  invisible(processSchemaTypes(node, doc, createConverters = createConverters, verbose = verbose,
-                               targetNamespace = tns, checkCircularTypes = checkCircularTypes, ...))
+  ans = processSchemaTypes(node, doc, createConverters = createConverters, verbose = verbose,
+                               targetNamespace = tns, checkCircularTypes = checkCircularTypes, ...)
+
+  invisible(if(simplify && length(ans) == 1 && is(ans, "SchemaCollection"))
+               ans[[1]]
+            else
+               ans)
+  
 }
 
 

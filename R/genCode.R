@@ -275,7 +275,8 @@ setMethod("defClass", "ANY",
                    types = NULL,
                    baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
-                   ignorePending = FALSE, opts = new("CodeGenOpts")) {
+                   ignorePending = FALSE, opts = new("CodeGenOpts"))
+ {
   def = NULL
   
 #if(name == "ResourceIdSetType") {
@@ -354,17 +355,19 @@ if(showDefClassTrace)
            
          } else if(is(i, "Element")) {
                # recursively define the type, using the Element's name.
-if(verbose) cat("<defClass>element", type@name, "\n")
 
-if(TRUE) {
-           tmp = if(class(i@type) %in% c("SchemaType", "SchemaTypeReference"))
-                     resolve(i@type, types)
-                 else
-                    i@type
-} else tmp = i@type           
+              if(verbose) cat("<defClass>element", type@name, "\n")
 
-           def = defClass(tmp, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, name = type@name, ignorePending = TRUE, opts = opts)
-           return(def)
+              if(TRUE) {
+                   tmp = if(class(i@type) %in% c("SchemaType", "SchemaTypeReference"))
+                           resolve(i@type, types)
+                         else
+                           i@type
+               } else tmp = i@type           
+
+               def = defClass(tmp, where, namespaceDefs, verbose, pending, classes,
+                                 types, baseClass, force, name = type@name, ignorePending = TRUE, opts = opts)
+               return(def)
          } else if(is(i, "SimpleSequenceType")) {   # XXX was "ArrayType" Nov 6.
             def = createArrayClass(i, types, name, where = where, verbose = verbose)
          } else if(is(i, "SchemaComplexType")) {
@@ -1091,7 +1094,7 @@ function(repn, slots, base = NA, className = NA, defaults = NULL)
     base = base[1]
     
     str = sapply(repn, function(x) x == "character")
-    
+
     
    if(!all(nas <- sapply(defaults, function(x) is.null(x) || length(x) == 0 || (length(x) == 1 && is.na(x))))) {
 

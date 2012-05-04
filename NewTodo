@@ -1,0 +1,107 @@
+<topics>
+
+<item>
+In processing egquery.xsd, eGCQueryResultType doesn't recognize
+the maxOccurs for the slot named ResultItem (with @type ResultItemType) and so just has one rather than a list
+of them.
+<br/>
+After we readSchema(), we have the correct information. So it is when we define the class.
+The call to createClassRepresentation() returns "ResultItemType" for the second slot
+rather than a list of these.  We should define a new RestrictedListType or something
+that induces a new class which is a List-Of-ResultItemType objects.
+This calls mapSchemaTypeToS().
+If this creates a new class description, we have to ensure that is defined.
+So we should do this earlier in the process, i.e. recognize the count
+and turn the slotType into RestrictedListType in the ClassDefinition.
+So this would be done in <r:func>processSchemaType</r:func>.
+The problem is that we have a local element there.
+So it is legitimate to leave that as is, unaggressively  describing the element.
+</item>
+
+<item>
+The default value for the ERROR slot in eGQueryResultType should be character(0), not "".
+<br/>
+The defaultValues in defineClassDefinition() are correct.
+Fix makePrototype().
+A simple call to prototype(defaults) gets the right thing. What
+does it screw up elsewhere.
+</item>
+
+<item>
+Create the fromConverter for ClassDefinition and ExtendedClassDefinition.
+<br/>
+Use createSOAPConverter if possible.
+</item>
+
+<item>
+Create the enumerated constants for RestrictedStringDefinition.
+Make this optionally.
+This would create a variable with the same name as the actual value
+and be there solely to avoid typos.
+</item>
+
+<item>
+remove the kml.xml file in inst/samples/
+</item>
+
+<item>
+defineClass(pmmlSchema) fails.
+</item>
+
+<item>
+define classes correponding to Element objects
+<br/>
+Make this optional.
+</item>
+
+<item>
+Make fromXML handle optional slots, required slots, 
+attributes, attribute default values, etc.
+</item>
+
+<item>
+Pretty print the description objects.
+Define <r:func>show</r:func> methods.
+</item>
+
+
+
+<item>
+SimpleSequenceType: biblio.xsd and Authors
+</item>
+
+<item>
+Graphical display of class hierarchy.
+</item>
+
+<item>
+Default value for Extension.row in pmml is wrong - character(). Should be NULL.
+<br/>
+We now kill these off too, I believe.
+</item>
+
+<item>
+LatLonBoxType in kml2.1.xsd
+Use this as an example of converting an ExtendedClassDefinition into
+an R class and a fromConverter.
+These elements are optional. So we have to check if they are present.
+</item>
+
+<item>
+What is the difference between SchemaAnyType (fewer occurrences) and AnySchemaType.
+<br/>
+I have removed the former now. Test!!!!!
+</item>
+
+<item id="string">
+Define a "string" class that extends/contains "character".
+Problem is that we lose the class of the elements
+as they become "character".
+</item>
+<item>
+Have to use a list as the base class for RestrictedListType 
+(and SimpleSequenceType) when the element type is a sub-class
+of a primitive type, e.g. "string" or "character".  See <ref ref="#string"/>
+</item>
+
+</topics>

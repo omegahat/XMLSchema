@@ -4,6 +4,8 @@ invisible(defineClasses(sch))
 
 
 library(XML)
+getClass("angle180")
+
 a = newXMLNode("angle180", 45)
 as(a, "angle180")
 

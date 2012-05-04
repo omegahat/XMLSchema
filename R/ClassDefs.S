@@ -77,11 +77,12 @@ setClass("CrossRefClass")
 #XXX What is the difference between this and SchemaAnyType
 setClass("AnySchemaType", contains = "SchemaType",
             prototype = list(name = "AnySchemaType", nsuri = W3SchemaURIs[['1.2']]["xsd"], Rname = "ANY"))
+#setClass("SchemaAnyType", representation("SchemaType"),
+#            prototype = list(name = "any", nsuri = W3SchemaURIs[['1.2']]["xsd"], Rname = "ANY"))
+
 
 setClass("SchemaVoidType", representation("SchemaType"),
             prototype = list(name = "null", ns = "xsi"))
-setClass("SchemaAnyType", representation("SchemaType"),
-            prototype = list(name = "any", nsuri = W3SchemaURIs[['1.2']]["xsd"], Rname = "ANY"))
 
 setClass("SchemaTypeReference", representation("SchemaType"))
 
@@ -105,7 +106,7 @@ setClass("SchemaComplexType",
 setClass("PrimitiveSchemaType", contains = c("BasicSchemaType", "TerminalSchemaType"))
 
 setClass("SchemaStringType", contains = "PrimitiveSchemaType",
-           prototype = list(name = "string", Rname = "string",
+           prototype = list(name = "string", # Rname = "string",
                             fromConverter = function(from) xmlValue(from)))
 
 
@@ -158,8 +159,7 @@ setClass("XMLSchemaComponent")
 
 # Was SchemaType and not BasicSchemaType. But needed the fromConverter. See 
 #   http://www.weather.gov/forecasts/xml/DWMLgen/wsdl/ndfdXML.wsdl
-setClass("RestrictedStringType", contains = "BasicSchemaType",
-            prototype = list(Rname = "string"))
+setClass("RestrictedStringType", contains = "BasicSchemaType") #  , prototype = list(Rname = "string"))
 #              prototype = list(ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema")))
 setClass("RestrictedStringDefinition", representation(values = "character"), contains = "RestrictedStringType")
 setClass("RestrictedStringPatternDefinition", representation(pattern = "character"), contains = "RestrictedStringType")
@@ -167,10 +167,10 @@ setClass("RestrictedStringPatternDefinition", representation(pattern = "characte
 
 
 setClass("RestrictedNumber", representation(range = "numeric", inclusive = "logical"), contains = "BasicSchemaType")
-setClass("RestrictedDouble", contains = "RestrictedNumber",
-                   prototype = list(Rname = "numeric"))
-setClass("RestrictedInteger", contains = "RestrictedNumber",
-                         prototype = list(Rname = "integer"))
+setClass("RestrictedDouble", contains = "RestrictedNumber")
+# Don't define these                  prototype = list(Rname = "numeric"))
+setClass("RestrictedInteger", contains = "RestrictedNumber")
+#                         prototype = list(Rname = "integer"))
 
 setClass("RestrictedHexBinary", representation(length = "integer", pattern = "character"), # pattern is a regular expression.
                                   contains = "RestrictedStringType")

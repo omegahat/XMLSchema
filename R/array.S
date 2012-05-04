@@ -285,7 +285,7 @@ parseArrayType =
 function(type, ns = character(), namespaces = list(), obj = new("ArrayType"),  targetNamespace = NA, elementFormDefault = NA)
 {
   if(is.null(type) || length(type) == 0 || is.na(type) || type == "") {
-     obj@elType = new("SchemaAnyType")
+     obj@elType = new("AnySchemaType")
      return(obj)
   }
           
