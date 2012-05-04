@@ -777,11 +777,11 @@ function(type, types = NULL, nsURI = rep(NA, length(type)),
                              force = force, pending = pending, classes = classes, baseClass = baseClass, opts = opts)
 
   if(all(sapply(slotTypes, is, "SimpleSequenceType"))) {
-    def =  setClass(name, contains = "list", where = where)
-    elTypes = sapply(slotTypes , function(x) mapSchemaTypeToS(x@elType, types = types))
-    f = function(object) {
-      XMLSchema:::checkHomogeneousList(object, elTypes)
-    }
+     def =  setClass(name, contains = "list", where = where)
+     elTypes = sapply(slotTypes , function(x) mapSchemaTypeToS(x@elType, types = types))
+      f = function(object) {
+          XMLSchema:::checkHomogeneousList(object, elTypes)
+     }
     setValidity(name, f, where = where)
   } else {
    def = setClassUnion(name, elTypes, where = where)
@@ -864,10 +864,10 @@ function(type, types, name = NA, where = globalenv(), parentClass = BaseClassNam
 
 #  name = type$definition@elementType
  if(is.na(name)) {  
-  name = if(is(type, "GenericSchemaType")) 
-            type@name
-         else 
-            type$name    
+    name = if(is(type, "GenericSchemaType")) 
+               type@name
+           else 
+               type$name    
   }
 
   el = if(is(type, "GenericSchemaType")) 
@@ -875,8 +875,12 @@ function(type, types, name = NA, where = globalenv(), parentClass = BaseClassNam
        else 
           type$definition@elType
 
+  if(is(el, "SchemaTypeReference")) 
+     el = type@elType = resolve(el, types)
 
   elName = if(is(el, "GenericSchemaType")) el@name else el$name
+
+  defClass(el, where, types = types, verbose = verbose, baseClass = parentClass) 
 
   builtinClass = "list"
   which = NA
@@ -907,15 +911,20 @@ function(type, types, name = NA, where = globalenv(), parentClass = BaseClassNam
         # Use validity below(?).
   ans = setClass(name, contains = builtinClass, where = where)
 
-  fun = function(from)
-             xmlSApply(from, as, "x")
-  body(fun)[[4]] = if(!is.na(which)) builtinClass else elName
-  environment(fun) = DefaultFunctionNamespace
-  setAs("XMLInternalElementNode", name, fun, where = where)
+  
+#XXX
+#  createSOAPConverter(, types = types)
+   fun = function(from)
+            xmlSApply(from, as, "x")
+   if(builtinClass == "list")
+        body(fun)[[1]] = as.name("xmlApply")
+   body(fun)[[4]] = if(!is.na(which)) builtinClass else elName
+   environment(fun) = DefaultFunctionNamespace
+   setAs("XMLAbstractNode", name, fun, where = where)
 
-  if(builtinClass %in% RPrimitiveTypes) {
+  if(builtinClass %in% RPrimitiveTypes) 
      createVectorCoercions(name, builtinClass, where)
-  }
+
 
   if(is(el, "UnionDefinition") || is(el, "ClassDefinition")) {
     #XXX make the validity method.
@@ -1238,7 +1247,7 @@ function(i, where = globalenv(),
          name = getName(i),
          ignorePending = FALSE, opts = new("CodeGenOpts"), ...)
   {
-#if(i@name == "itemIconStateType") browser()    
+
     # ensure the element type is defined.
   elType = resolve(i@elType, types)
   defClass(elType, where, namespaceDefs, verbose, pending, classes, types,

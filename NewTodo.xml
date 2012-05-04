@@ -6,7 +6,7 @@
 <title>General</title>
 <items>
 
-<item>
+<item status="done">
 Use createSOAPConverter to create the fromConverter when we are defining the classes.
 <br/>
 SnippetType is getting the wrong converter, yet createSOAPConverter for the type is correct.
@@ -17,7 +17,7 @@ When we resolve that, we get a different definition of
 <br/>
 Temporarily changed getName() and also had resolve() method for AttributeDef
 return the AttributeDef but with the type resolved.
-We may need to back these out, but defineClasses() seems to complete
+We may need to back these out, but defineClasses() seems to complete.
 </item>
 
 <item>
@@ -45,7 +45,12 @@ from the element name to a class when the element name does not
 correspond to an actual class?
 <br/>
 Do we define a class for the element?
+<br/>
+Problem is multiple elements may map to the same name.
+But not at the top-level.  Can we use composite names to identify the class
+for internal/local elements.
 </item>
+
 
 <item status="done">
 Defining ObjectType in kml21.xsd doesn't use classes ID and NCName.
@@ -159,6 +164,13 @@ Define <r:func>show</r:func> methods.
 SimpleSequenceType: biblio.xsd and Authors
 <br/>
 What about this? On my  hand-written notes.
+<br/>
+We need to create a validity method, converter, 
+and also force the definitions of dependent classes.
+
+<br/>
+We should be able to move this to <r:func>createSOAPConverter</r:func>
+but we need to compute the base type and the type of the elements.
 </item>
 
 <item status="low">

@@ -255,6 +255,19 @@ setMethod("createSOAPConverter", "UnionDefinition",
 
 # Recognize the primitive types.
 
+# See createArrayClass in genCode.R  Compute builtinClass and elName there.
+setMethod("createSOAPConverter",
+           "SimpleSequenceType",
+            function(type, namespaces, defs = NULL, types = list(), ...) {
+                 fun = function(from)
+                   xmlSApply(from, as, "x")
+               #  if(builtinClass == "list")
+               #      body(fun)[[1]] = as.name("xmlApply")
+              body(fun)[[4]] = if(!is.na(which)) builtinClass else elName
+#  environment(fun) = DefaultFunctionNamespace
+  fun
+})
+
 setMethod("createSOAPConverter",
            "SchemaGroupType",
             function(type, namespaces, defs = NULL, types = list(), ...) {

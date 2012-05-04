@@ -114,7 +114,7 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
 
              if(!is.null(xrefInfo) && !is.null(xrefInfo$crossRefNames) && sprintf("%s:%s", obj@nsuri, obj@name) %in%  xrefInfo$crossRefNames) {
-#browser()               
+
                    tp = xrefInfo$types
                    w = sapply(tp, function(tt) {
                                       i = match(obj@name, tt@subclasses)
@@ -134,8 +134,12 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
 
              # find which context element corresponds to the URI we have in the object.
              i = match(obj@nsuri, names(context))
+             
              if(is.na(i)) {
-                   stop("can't find namespace '", obj@nsuri, "' of SchemaTypeReference ", obj@name,
+                   if(length(context) == 1 && names(context) == "" && is.na(obj@nsuri))
+                      i = 1L
+                   else
+                      stop("can't find namespace '", obj@nsuri, "' of SchemaTypeReference ", obj@name,
                                 " in context ", paste(names(context), collapse = ", "))
              }
 
