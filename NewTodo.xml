@@ -8,6 +8,20 @@
 
 <item>
 Use createSOAPConverter to create the fromConverter when we are defining the classes.
+<br/>
+SnippetType is getting the wrong converter, yet createSOAPConverter for the type is correct.
+See kml.R.
+In defClass(), the type@slotTypes[[1]] is a PrimitiveSchemaType, not an AttributeDef.
+This is because it is coming in indirectly from a field in FeatureType.
+When we resolve that, we get a different definition of 
+<br/>
+Temporarily changed getName() and also had resolve() method for AttributeDef
+return the AttributeDef but with the type resolved.
+We may need to back these out, but defineClasses() seems to complete
+</item>
+
+<item>
+Implement method for createSOAPConverter for SchemaGroupType.
 </item>
 
 <item status="done">
@@ -84,10 +98,12 @@ A simple call to prototype(defaults) gets the right thing. What
 does it screw up elsewhere.
 </item>
 
-<item>
+<item status="check">
 Related to createSOAPConverter(), make certain to deal with mixed
 and simple content when we have to pick up the text content from the node.
 e.g. SnippetType in kml21
+<br/>
+See kml.R.  Works for string or character as base class.
 </item>
 
 
@@ -151,9 +167,25 @@ Graphical display of class hierarchy.
 
 <item>
 defineClass(pmmlSchema) fails.
+<br/>
+Ending up with a call o getClassDef() with "" as the name of the class.
+This happens as part of processing the ChildParent type.
+In the call to defineClassDefinition for this, we get
+<r:code>
+sapply(i@slotTypes, class)
+<r:output><![CDATA[
+                   Extension    TableLocatorOrInlineTable 
+                   "Element"            "UnionDefinition" 
+                  childField                  parentField 
+          "SchemaStringType"           "SchemaStringType" 
+            parentLevelField                  isRecursive 
+          "SchemaStringType" "RestrictedStringDefinition" 
+]]></r:output>
+</r:code>
+We are dying in the 6th of these which is a SchemaStringType.
 </item>
 
-<item>
+<item status="check">
 Default value for Extension.row in pmml is wrong - character(). Should be NULL.
 <br/>
 We now kill these off too, I believe.

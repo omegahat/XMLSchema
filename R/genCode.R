@@ -113,6 +113,8 @@ function(i, compute = FALSE)
     # e.g. GetDatabases in MassSpecAPI is an empty element so type is NULL
   ans = if(is(i, "Element") && length(i@type))  {
            if(length(i@type@Rname)) i@type@Rname else i@type@name
+        } else if (is(i, "AttributeDef")) { 
+           i@type@name
         } else if(is(i, "GenericSchemaType") || is(i, "XMLSchemaComponent")) {
            if(length(i@Rname)) i@Rname else i@name
         } else
@@ -203,14 +205,20 @@ function(i, where = globalenv(),
     
     if(!is.null(def)) {
 
-      if(is(type, "BasicSchemaType") && length(formals(type@fromConverter)) > 0) {
+      if(is(type, "BasicSchemaType")) {
         if(verbose)
             cat("defining setAs() for", type@name, "\n")
-        if(is(type@fromConverter, "SchemaElementConverter"))
-           cvt = as(type@fromConverter, "AsFunction")
-        else
-           cvt = type@fromConverter
-        setAs("XMLAbstractNode", type@name, cvt, where = where)
+
+        if(length(formals(type@fromConverter)) == 0)
+           type@fromConverter = createSOAPConverter(type)
+
+        if(length(formals(type@fromConverter)) > 0)  {
+           if(is(type@fromConverter, "SchemaElementConverter"))
+               cvt = as(type@fromConverter, "AsFunction")
+           else
+               cvt = type@fromConverter
+           setAs("XMLAbstractNode", type@name, cvt, where = where)
+         }
       }         
 
       assign(name, def, classes)
@@ -319,12 +327,10 @@ if(showDefClassTrace)
             body(valid)[[2]][[3]] = i@values
             def = setClass(name, contains = "string", validity = valid, where = where)
 
-            if(defineEnumVars) {
+            if(defineEnumVars) 
               sapply(i@values, function(x) assign(x, x, where))
-            }
-               
-            
 
+            def
          } else if(is(i, "RestrictedSetInteger")) {
 
             # add a validity
@@ -396,7 +402,7 @@ if(showDefClassTrace)
               defClass(tmp, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, name, ignorePending, opts)
          } else {
            warning("defClass: no code to handle ", class(i), " for ", i@name)
-#           browser()
+
            def = NULL
          }
     })

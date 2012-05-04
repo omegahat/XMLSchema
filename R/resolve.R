@@ -52,7 +52,10 @@ setMethod("resolve", c("AttributeDef", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
               ans = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo)
               ans@default = obj@default
-              ans
+#             ans
+#XXXX ADDING THIS TEMPORARILY               Fri May 4, 12:33 2012
+              obj@type = ans
+              obj
            })
 
 setMethod("resolve", c("NULL", "list"),

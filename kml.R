@@ -20,7 +20,7 @@ sch[[1]]$angle180@toConverter(v)
 # Works now if we add the root = "missing".
 
 
-XMLSchema:::defClass(sch[[1]][[5]])
+#XMLSchema:::defClass(sch[[1]][[5]])
 a = newXMLNode("altitudeModeEnum", "clampToGround")
 v = as(a, "altitudeModeEnum")
 
@@ -37,7 +37,7 @@ sch[[1]]$color@toConverter(v)
 
 
 sch[[1]][["CoordinatesType"]]@fromConverter
-XMLSchema:::defClass(sch[[1]][["CoordinatesType"]])
+#XMLSchema:::defClass(sch[[1]][["CoordinatesType"]])
  # check validity
 getValidity(getClass("CoordinatesType"))
 new("CoordinatesType", c("abc", "def"))
@@ -47,7 +47,7 @@ as(ct, "CoordinatesType")
 
 
 ########
-XMLSchema:::defClass(sch[[1]]$itemIconStateType, types = sch)
+#XMLSchema:::defClass(sch[[1]]$itemIconStateType, types = sch)
 as(newXMLNode("itemIconStateEnum", "open"), "itemIconStateEnum")
 new("itemIconStateEnum", "open")
 try(new("itemIconStateEnum", "openx"))
@@ -74,9 +74,10 @@ createSOAPConverter(sch[[1]]$LatLonBoxType, , sch)
 
 ####################
 
-XMLSchema:::defClass(sch[[1]]$SnippetType, types = sch)
+#XMLSchema:::defClass(sch[[1]]$SnippetType, types = sch)
+f = createSOAPConverter(sch[[1]]$SnippetType)
 
-
-nn = newXMLNode("Snippet", attributes = c(maxLines = 3),
+nn = newXMLNode("Snippet", attrs = c(maxLines = 3),
                  "This is some text as part of a snippet. Note the attribute value")
+f(nn)
 as(nn, "SnippetType")

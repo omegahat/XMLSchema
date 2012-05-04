@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<?xml-stylesheet type="text/xsl" href="../../Docs/XSL/Todo.xsl" ?> 
+<?xml-stylesheet type="text/xsl" href="/Users/duncan/Classes/StatComputing/XDynDocs/inst/XSL/OmegahatXSL/Todo.xsl" ?> 
 
 <topics xmlns:r="http://www.r-project.org">
-<title>XMLSchema</title>
+<title>XMLSchema package</title>
+
+<ulink url="NewTodo.xml">New Todo</ulink>
+
 <topic>
 <title>Schema</title>
 <items>
@@ -89,12 +91,13 @@ Or at least when defining
 </item>
 
 <item>
+<![CDATA[
 w = readSchema("../../SOAP/WSDLs/2007-01-19.ec2.wsdl")
 Warning message:
 In processSchemaType(el) :
   Failed to handle node EmptyElementType of type complexType & text in processSchemaType. <xs:complexType name="EmptyElementType">
 		  </xs:complexType>ProcessWSDLTypeError
-> 
+]]>
 </item>
 
 <item>

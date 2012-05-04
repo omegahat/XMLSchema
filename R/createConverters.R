@@ -87,7 +87,7 @@ setGeneric("genSlotFromConverterCode", function(elType, id)  standardGeneric("ge
 setMethod("genSlotFromConverterCode", "ANY",
    function(elType, id)
    {
-      optional =  (0 %in% elType@count)
+      optional = is(elType, "SchemaType") && length(elType@count) && (0 %in% elType@count)
 
       if(is(elType, "PrimitiveSchemaType")) {
 
@@ -156,13 +156,31 @@ setMethod("createSOAPConverter",
                    # change the first expression which creates the new object
                    # by first coercing the input object to the base
                    # and then to the target type.
+                                                           
                fun = callNextMethod()
-               e = quote(obj <- as(as(from, base), type))
-               e[[3]][[2]][[3]] = type@base
-               e[[3]][[3]] = getRTypeFromSOAP(type@name, "type")
+               if(type@base %in% c("character", "string")) {
+                 e = quote(obj <- new("", XMLSchema:::getNodeText(from)))
+                 e[[3]][[2]] = getRTypeFromSOAP(type@name, "type")
+               } else {
+                 e = quote(obj <- as(as(from, base), type))
+                 e[[3]][[2]][[3]] = type@base
+                 e[[3]][[3]] = getRTypeFromSOAP(type@name, "type")
+               }
+               
                body(fun)[[2]] = e
                fun
             })
+
+getNodeText =
+   # gets the text nodes from this XML node as a character vector
+function(from)
+{
+   isText = xmlSApply(from, is, "XMLInternalTextNode")
+   if(any(isText))
+     sapply(xmlChildren(from)[isText],  xmlValue)
+   else
+     character()
+}
 
 setMethod("createSOAPConverter",
            "ClassDefinition",
@@ -229,13 +247,20 @@ setMethod("createSOAPConverter", "UnionDefinition",
                         # We do have to deal with the case where there are no elements perhaps
                         # But that shouldn't arise here, should it ? i.e. minOccurs inside the choice?????
                         #
-                        f = function(x, ...) {
-                                as(x, xmlName(x))
+                        f = function(from) { # used to have ...
+                                as(from, xmlName(from))
                             }
                         new("XMLChoiceConverter", f)                        
                       })
 
 # Recognize the primitive types.
+
+setMethod("createSOAPConverter",
+           "SchemaGroupType",
+            function(type, namespaces, defs = NULL, types = list(), ...) {
+              warning("no method for createSOAPConverter for SchemaGroupType named ", type@name)
+              function() NULL
+            })
 
 setMethod("createSOAPConverter",
            "ArrayType",
