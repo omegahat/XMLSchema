@@ -24,8 +24,8 @@ setAs("XMLAbstractNode", "string",
 
 # Corresponds to anySimpleType in XSD.
 
-setClass("CodeGenOpts", representation(makePrototype = "logical"),
-           prototype = prototype(makePrototype = TRUE))
+setClass("CodeGenOpts", representation(makePrototype = "logical", defineEnumVars = "logical"),
+           prototype = prototype(makePrototype = TRUE, defineEnumVars = FALSE))
 
 setClass("Base64Encoded", contains = "character")
 setAs("Base64Encoded", "raw",

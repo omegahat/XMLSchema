@@ -66,3 +66,17 @@ nd = newXMLNode("itemIconStateType",
 try(as(nd, "itemIconStateType"))
 
 
+###############
+
+createSOAPConverter(sch[[1]]$ObjectType, , sch)
+createSOAPConverter(sch[[1]]$LatLonBoxType, , sch)
+
+
+####################
+
+XMLSchema:::defClass(sch[[1]]$SnippetType, types = sch)
+
+
+nn = newXMLNode("Snippet", attributes = c(maxLines = 3),
+                 "This is some text as part of a snippet. Note the attribute value")
+as(nn, "SnippetType")

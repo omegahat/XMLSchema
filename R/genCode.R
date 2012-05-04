@@ -133,7 +133,7 @@ function(i, where = globalenv(),
          types = NULL,
          baseClass = BaseClassName, force = FALSE,
          name = getName(i),
-         ignorePending = FALSE, opts = new("CodeGenOpts"))
+         ignorePending = FALSE, opts = new("CodeGenOpts"), ...)
 {
     orig = i
 
@@ -232,7 +232,7 @@ setMethod("defClass", "LocalElement",
                    baseClass = BaseClassName,
                    force = FALSE,
                    name = getName(i),
-                   ignorePending = FALSE, opts = new("CodeGenOpts")) {
+                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
 
             defClass(i@type, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, name, ignorePending, opts)
           })
@@ -247,7 +247,7 @@ setMethod("defClass", "SchemaTypes",
                    types = NULL,
                    baseClass = BaseClassName, force = FALSE,
                    name = if(is(i, "GenericSchemaType") || is(i, "XMLSchemaComponent")) i@name else i$name,
-                   ignorePending = FALSE, opts = new("CodeGenOpts")) {
+                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
 
     lapply(i, defClass, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, name, ignorePending, opts)
    })
@@ -262,7 +262,7 @@ setMethod("defClass", "Element",
                    types = NULL,
                    baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
-                   ignorePending = FALSE, opts = new("CodeGenOpts")) {
+                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
             defClass(i@type, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, name, ignorePending, opts)
       })
 
@@ -275,7 +275,8 @@ setMethod("defClass", "ANY",
                    types = NULL,
                    baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
-                   ignorePending = FALSE, opts = new("CodeGenOpts"))
+                   ignorePending = FALSE, opts = new("CodeGenOpts"),
+                   defineEnumVars = opts@defineEnumVars, ...)
  {
   def = NULL
   
@@ -317,6 +318,11 @@ if(showDefClassTrace)
             }
             body(valid)[[2]][[3]] = i@values
             def = setClass(name, contains = "string", validity = valid, where = where)
+
+            if(defineEnumVars) {
+              sapply(i@values, function(x) assign(x, x, where))
+            }
+               
             
 
          } else if(is(i, "RestrictedSetInteger")) {
@@ -407,7 +413,7 @@ setMethod("defClass", "CrossRefType",
                    baseClass = BaseClassName,
                    force = FALSE,
                    name = getName(i),
-                   ignorePending = FALSE, opts = new("CodeGenOpts")) {
+                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
             
             setClass(i@name, contains = "CrossRefClass", where = where)
           })
@@ -422,7 +428,7 @@ setMethod("defClass", "SchemaGroupType",
                    baseClass = BaseClassName,
                    force = FALSE,
                    name = getName(i),
-                   ignorePending = FALSE, opts = new("CodeGenOpts")) {
+                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
 
           defClass(i@slotTypes[[1]], where, namespaceDefs, verbose, pending, classes, types, baseClass, force, i@name, ignorePending = TRUE, opts)
 
@@ -453,7 +459,7 @@ setMethod("defClass", "AttributeDef",
                    types = NULL,
                    baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
-                   ignorePending = FALSE, opts = new("CodeGenOpts")) {
+                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
 
                  defClass(i@type, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, name, ignorePending, opts)
                })
@@ -469,7 +475,7 @@ setMethod("defClass", "SchemaTypeReference",
                    types = NULL,
                    baseClass = BaseClassName, force = FALSE,
                    name = if(is(i, "GenericSchemaType") || is(i, "XMLSchemaComponent")) i@name else i$name,
-                   ignorePending = FALSE, opts = new("CodeGenOpts")) {
+                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
 
      def = getClassDef(i@name)
      if(length(def) == 0) {
@@ -494,7 +500,7 @@ setMethod("defClass", "RestrictedStringPatternDefinition",
                    types = NULL,
                    baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
-                   ignorePending = FALSE, opts = new("CodeGenOpts")) {
+                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
 
            #Set the validity to enforce the pattern is met.
            #??? Can we use i@fromConverter
@@ -932,6 +938,11 @@ function(className, base, where = globalenv())
 getRTypeFromSOAP =
 function(el, col = "xsi:type", asIndex = FALSE)
 {
+  if(is(el, "LocalElement"))
+    el = el@type
+  if(is(el, "GenericSchemaType"))
+    el = el@name
+     
  target = if(col == "xsi:type") paste("xsd:", el, sep = "") else el
  i = match(target, sapply(XMLSchemaTypes, function(x) x[[col]]))
  if(asIndex)
@@ -1070,7 +1081,7 @@ setMethod("defClass", "EnumValuesDef",
                    types = NULL,
                    baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
-                   ignorePending = FALSE, opts = new("CodeGenOpts")) {
+                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
 
     defEnum(name, i@values, where = where)
           })
@@ -1092,18 +1103,27 @@ function(repn, slots, base = NA, className = NA, defaults = NULL)
 #    str = sapply(slots, function(x) is(x, "PrimitiveSchemaType") && x@name == "string")
 
     base = base[1]
-    
+
+        # Indicator for which elements are actually "character".
+        # (Missing those that extend character, e.g. "string" or any new types in the schema
+        # that are derived from character/string
+        
     str = sapply(repn, function(x) x == "character")
 
-    
-   if(!all(nas <- sapply(defaults, function(x) is.null(x) || length(x) == 0 || (length(x) == 1 && is.na(x))))) {
+        # for each default, determine if it is degenerate, i.e NULL, empty or an NA.
+   nas <- sapply(defaults, function(x) is.null(x) || length(x) == 0 || (length(x) == 1 && is.na(x)))
 
+        # if there are some elements of repn that are not degenerate, then
+        # create the prototypes from those and be done.
+   if(!all(nas)) {
        values =  mapply(as, defaults[!nas], repn[!nas], SIMPLIFY = FALSE)
       # values[ names(str)[str & nas] ] = ""
        ans = do.call(prototype, values)
        return(ans)
     }
     
+#XXX added here to skip the part below that turns character() into ""
+    return(prototype(defaults))
 
     ans = if(any(str)) {
                # call prototype with the name = value sequences
@@ -1130,7 +1150,7 @@ function(i, where = globalenv(),
          types = NULL,
          baseClass = BaseClassName, force = FALSE,
          name = getName(i),
-         ignorePending = FALSE, opts = new("CodeGenOpts"))
+         ignorePending = FALSE, opts = new("CodeGenOpts"), ...)
 {
       # ??? Isn't this now in @Rname
    base = switch(class(i), "RestrictedInteger" = "integer", "RestrictedDouble" = "numeric")
@@ -1167,7 +1187,7 @@ function(i, where = globalenv(),
          types = NULL,
          baseClass = BaseClassName, force = FALSE,
          name = getName(i),
-         ignorePending = FALSE, opts = new("CodeGenOpts"))
+         ignorePending = FALSE, opts = new("CodeGenOpts"), ...)
   {
 
 
@@ -1210,7 +1230,7 @@ function(i, where = globalenv(),
          types = NULL,
          baseClass = BaseClassName, force = FALSE,
          name = getName(i),
-         ignorePending = FALSE, opts = new("CodeGenOpts"))
+         ignorePending = FALSE, opts = new("CodeGenOpts"), ...)
   {
 #if(i@name == "itemIconStateType") browser()    
     # ensure the element type is defined.

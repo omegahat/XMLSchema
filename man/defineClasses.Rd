@@ -47,7 +47,15 @@ defineClasses(types, where = globalenv(), namespaceDefs = list(),
   \item{pending,classes}{environments which are updated by the different
   functions and methods we call to register the names of the classes
   that are being processed and defined.  We allow these to be specified
-  by the caller so that she can control and monitor some of the processing.}
+  by the caller so that she can control and monitor some of the
+  processing.}
+\item{\dots}{additional parameters passed on to \code{defClass}.
+  For example, \code{defineEnumVars} can be \code{TRUE} and then
+  string values from \code{RestrictedStringDefinition} types are
+  also assigned to variables with the same name as the value.
+  This can be beneficial as typos are caught because the variables
+  aren't found. However, non-matching values are also caught at run time
+  too.}
 }
 \value{
   A list with the class definitions.

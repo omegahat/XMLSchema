@@ -69,48 +69,112 @@ setMethod("createSOAPConverter",
             })
 
 
+                # create template expressions for setting the slot
+                # both by as(node, ) and by as( xmlValue(), ).
+gen.tmpl = expression(obj@slotId <- as(from, "?"))[[1]]
+prim.tmpl = expression(obj@slotId <- as(xmlValue(from[[""]]), "?"))[[1]]
+                # templat for attribute values
+attr.tmp = quote(obj@slotId <- as(xmlGetAttr(from, "attrName"), type))
+
+
+setGeneric("genSlotFromConverterCode", function(elType, id)  standardGeneric("genSlotFromConverterCode"))
+
+            # Want to deal with optional  elements, e.g. minOccurs = "0"
+            # and put tmpl in an if(!is.null(from[[id]]) )
+
+    # Note that if we know the elements have to come in a particular order
+    # we can index them by number.
+setMethod("genSlotFromConverterCode", "ANY",
+   function(elType, id)
+   {
+      optional =  (0 %in% elType@count)
+
+      if(is(elType, "PrimitiveSchemaType")) {
+
+                # Deal with minOccurs, etc. for optional
+                # Also, if all are required (or up to before the first optional node)
+                # we can use numeric indices rather than names.
+         tmpl = prim.tmpl
+         tmpl[[3]][[2]][[2]][[3]] = id
+                     # for "string", we don't need the extra as(, "character")
+         if(elType@name == "string")
+            tmpl[[3]] = tmpl[[3]][[2]]
+         else
+            tmpl[[3]][[3]] = getRTypeFromSOAP(elType, "type")
+
+          if(optional)
+             prim.tmpl[[3]][[2]][[2]] = as.name("tmp")
+      } else {
+          tmpl = gen.tmpl               
+          tmpl[[3]][[3]] = getRTypeFromSOAP(elType, "type")
+                                             # was if(is(elType, "GenericSchemaType")) elType@name else elType #XXXXXXX
+          if(optional)
+            tmpl[[3]][[2]] = as.name("tmp")
+      }
+                 # Convert names to NAMES, etc.
+      tmpl[[2]][[3]] = as.name(id)
+
+      if(optional) {
+        e = quote(if(!is.null(tmp <- from[[""]])) do)
+        e[[2]][[2]][[2]][[3]][[3]] = id
+        e[[3]] = tmpl
+        e
+      }  else
+         tmpl
+})
+
+#XXXXXXXXXXXXXXXXXXXXXXXXXX
+# Deal with
+# [Done] optional elements
+# [Done] extended classes
+# [Done] with optional attributes
+# Check all
+
+setMethod("genSlotFromConverterCode", "AttributeDef",
+   function(elType, id) {
+     
+        attr.tmp[[2]][[3]] = as.symbol(id)
+        attr.tmp[[3]][[2]][[3]] = id
+        attr.tmp[[3]][[3]] = getRTypeFromSOAP(elType@type@name, "type") 
+
+        if(elType@use == "optional") {
+           e = quote(if(!is.null(tmp <- xmlGetAttr(from, name))) do)
+           e[[2]][[2]][[2]][[3]][[3]] = id
+           attr.tmp[[3]][[2]] = as.symbol("tmp")
+           e[[3]] = attr.tmp
+           e
+        }  else
+           attr.tmp
+        
+   })
+
+
+setMethod("createSOAPConverter",
+           "ExtendedClassDefinition",
+            function(type, namespaces, defs = NULL, types = list(), ...) {
+                   # use the inherited method for ClassDefinition and then
+                   # change the first expression which creates the new object
+                   # by first coercing the input object to the base
+                   # and then to the target type.
+               fun = callNextMethod()
+               e = quote(obj <- as(as(from, base), type))
+               e[[3]][[2]][[3]] = type@base
+               e[[3]][[3]] = getRTypeFromSOAP(type@name, "type")
+               body(fun)[[2]] = e
+               fun
+            })
+
 setMethod("createSOAPConverter",
            "ClassDefinition",
             function(type, namespaces, defs = NULL, types = list(), ...) {
-
-               gen.tmpl = expression(obj@slotId <- as(from, "?"))[[1]]
-               prim.tmpl = expression(obj@slotId <- as(xmlValue(from[[""]]), "?"))[[1]]
 
                f = classTemplate
                bd = body(f)
                bd[[2]][[3]][[2]] = type@name
                slotIds = names(type@slotTypes)
-               b = lapply(seq(along = slotIds),
-                            function(i) {
-                               elType = type@slotTypes[[i]]
-                               id = slotIds[i]
-                               
-                               if(is(elType, "PrimitiveSchemaType")) {
+               b = mapply(genSlotFromConverterCode, type@slotTypes, slotIds)
 
-                                 # Deal with minOccurs, etc. for optional
-                                 # Also, if all are required (or up to before the first optional node)
-                                 # we can use numeric indices rather than names.
-                                   tmpl = prim.tmpl
-                                   tmpl[[3]][[2]][[2]][[3]] = id
-                                      # for "string", we don't need the extra as(, "character")
-                                   if(elType@name == "string")
-                                     tmpl[[3]] = tmpl[[3]][[2]]
-                                   else
-                                     tmpl[[3]][[3]] = getRTypeFromSOAP(elType@name, "type")
-                               } else {
-                                  tmpl = gen.tmpl               
-                                  tmpl[[3]][[3]] = if(is(elType, "GenericSchemaType")) elType@name else elType #XXXXXXX
-                               }
-
-                                # Convert names to NAMES, etc.
-                               tmpl[[2]][[3]] = as.name(id)
-                                 #XXX would like to return tmpl and then insert these into the body.
-
-                               # Want to deal with optional  elements, e.g. minOccurs = "0"
-                               # and put tmpl in an if(!is.null(from[[id]]) )
-                               
-                               bd[[i + 2]] <<- tmpl
-                            })
+               bd[seq(3, length = length(slotIds))] = b
                    # Add the expression that returns the object.
                bd[[length(bd) + 1]] = quote(obj)
 

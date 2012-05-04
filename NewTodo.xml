@@ -1,20 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type="text/xsl" href="/Users/duncan/Classes/StatComputing/XDynDocs/inst/XSL/OmegahatXSL/Todo.xsl" ?> 
+
 <topics xmlns:r="http://www.r-project.org">
-<?xml-stylesheet type="text/xsl" href="../../Docs/XSL/Todo.xsl" ?> 
 <topic>
 <title>General</title>
 <items>
 
 <item>
-How to get fromXML(node) recognize that there is mapping
-from the element name to a class.
+Use createSOAPConverter to create the fromConverter when we are defining the classes.
+</item>
+
+<item status="done">
+In <r:func>genSlotFromConverterCode</r:func>, we are getting the name of the element not the type
+for <r:class>LocalElement</r:class>.  See <r:func>getRTypeFromSOAP</r:func>
+<br/>
+Extended <r:func>getRTypeFromSOAP</r:func> to look at its first argument
+and to process a GenericSchemaType and a LocalElement to get the name, then map it.
+</item>
+
+<item status="done">
+When creating the prototype for a class definition,
+make certain we use the default value for an attribute.
+<br/>
+See SnippetType and vec2Type in kml21.
+</item>
+
+<item>
+How to get fromXML(node) to recognize that there is a mapping
+from the element name to a class when the element name does not
+correspond to an actual class?
 <br/>
 Do we define a class for the element?
 </item>
 
-<item status="fixed">
+<item status="done">
 Defining ObjectType in kml21.xsd doesn't use classes ID and NCName.
-The PrimitiveSchemaType in sch[[1]]$ObjectType@slotTypes[[1]]@type
+The PrimitiveSchemaType in <r:expr>sch[[1]]$ObjectType@slotTypes[[1]]@type</r:expr>
 has a value for Rname that is "character" and not ID
 </item>
 
@@ -34,9 +55,27 @@ and turn the slotType into RestrictedListType in the ClassDefinition.
 So this would be done in <r:func>processSchemaType</r:func>.
 The problem is that we have a local element there.
 So it is legitimate to leave that as is, unaggressively  describing the element.
+<r:code>
+source("query.R")
+e = query[[1]]$eGQueryResult@slotTypes[[2]]
+class(e)
+e@count
+</r:code>
+The count is also on the type, but that is a SchemaTypeReference.
+This is getting lost when we resolve the reference.
+<br/>
+This is probably okay and then we recognize that we have a type
+and a number of elements. So we could create an intermediate class,
+or use a generic list with a filter on the types. This still
+needs an intermediate class that extends the generic list type.
+<br/>
+Is this similar to Authors in biblio.xsd, i.e.
+making a class that is a list containing elements of a data type.
 </item>
 
-<item>
+<item status="check">
+<i>Check SSOAP to see if this has broken anything.</i>
+
 The default value for the ERROR slot in eGQueryResultType should be character(0), not "".
 <br/>
 The defaultValues in defineClassDefinition() are correct.
@@ -46,16 +85,41 @@ does it screw up elsewhere.
 </item>
 
 <item>
+Related to createSOAPConverter(), make certain to deal with mixed
+and simple content when we have to pick up the text content from the node.
+e.g. SnippetType in kml21
+</item>
+
+
+<item status="check">
 Create the fromConverter for ClassDefinition and ExtendedClassDefinition.
 <br/>
 Use createSOAPConverter if possible.
+<br/>
+Make fromXML handle optional slots, required slots, 
+attributes, attribute default values, etc.
+<br/>
+LatLonBoxType in kml2.1.xsd
+Use this as an example of converting an ExtendedClassDefinition into
+an R class and a fromConverter.
+These elements are optional. So we have to check if they are present.
+<br/>
+See LatLonBoxType.Rdb in Books/XMLTechnologies/XMLSchema.
+<br/>
+<b>Works for these</b>
 </item>
 
-<item>
+<item status="done">
 Create the enumerated constants for RestrictedStringDefinition.
 Make this optionally.
 This would create a variable with the same name as the actual value
 and be there solely to avoid typos.
+<br/>
+Document the defineVarEnums.
+</item>
+
+<item status="document">
+Document CodeGenOpts and provide a constructor function.
 </item>
 
 <item status="done">
@@ -65,18 +129,9 @@ in notes/
 </item>
 
 <item>
-defineClass(pmmlSchema) fails.
-</item>
-
-<item>
 define classes correponding to Element objects
 <br/>
 Make this optional.
-</item>
-
-<item>
-Make fromXML handle optional slots, required slots, 
-attributes, attribute default values, etc.
 </item>
 
 <item status="low">
@@ -84,14 +139,18 @@ Pretty print the description objects.
 Define <r:func>show</r:func> methods.
 </item>
 
-
-
 <item>
 SimpleSequenceType: biblio.xsd and Authors
+<br/>
+What about this? On my  hand-written notes.
 </item>
 
 <item status="low">
 Graphical display of class hierarchy.
+</item>
+
+<item>
+defineClass(pmmlSchema) fails.
 </item>
 
 <item>
@@ -100,14 +159,6 @@ Default value for Extension.row in pmml is wrong - character(). Should be NULL.
 We now kill these off too, I believe.
 </item>
 
-<item>
-LatLonBoxType in kml2.1.xsd
-Use this as an example of converting an ExtendedClassDefinition into
-an R class and a fromConverter.
-These elements are optional. So we have to check if they are present.
-<br/>
-See LatLonBoxType.Rdb in Books/XMLTechnologies/XMLSchema
-</item>
 
 <item status="done">
 What is the difference between SchemaAnyType (fewer occurrences) and AnySchemaType.
@@ -115,17 +166,18 @@ What is the difference between SchemaAnyType (fewer occurrences) and AnySchemaTy
 I have removed the former now. Test!!!!!
 </item>
 
-<item id="string">
+<item status="later" id="string">
 Define a "string" class that extends/contains "character".
 Problem is that we lose the class of the elements
 as they become "character".
 </item>
 
-<item>
+<item status="later">
 Have to use a list as the base class for RestrictedListType 
 (and SimpleSequenceType) when the element type is a sub-class
 of a primitive type, e.g. "string" or "character".  See <ref ref="#string"/>
 </item>
+
 </items>
 </topic>
 </topics>
