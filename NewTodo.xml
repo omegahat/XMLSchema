@@ -4,6 +4,14 @@
 <topic>
 <title>General</title>
 <items>
+
+<item>
+How to get fromXML(node) recognize that there is mapping
+from the element name to a class.
+<br/>
+Do we define a class for the element?
+</item>
+
 <item status="fixed">
 Defining ObjectType in kml21.xsd doesn't use classes ID and NCName.
 The PrimitiveSchemaType in sch[[1]]$ObjectType@slotTypes[[1]]@type
@@ -50,9 +58,10 @@ This would create a variable with the same name as the actual value
 and be there solely to avoid typos.
 </item>
 
-<item>
+<item status="done">
 remove the kml.xml file in inst/samples/
-</item>
+<br/>
+o</item>
 
 <item>
 defineClass(pmmlSchema) fails.
@@ -69,7 +78,7 @@ Make fromXML handle optional slots, required slots,
 attributes, attribute default values, etc.
 </item>
 
-<item>
+<item status="low">
 Pretty print the description objects.
 Define <r:func>show</r:func> methods.
 </item>
@@ -80,7 +89,7 @@ Define <r:func>show</r:func> methods.
 SimpleSequenceType: biblio.xsd and Authors
 </item>
 
-<item>
+<item status="low">
 Graphical display of class hierarchy.
 </item>
 
@@ -95,6 +104,8 @@ LatLonBoxType in kml2.1.xsd
 Use this as an example of converting an ExtendedClassDefinition into
 an R class and a fromConverter.
 These elements are optional. So we have to check if they are present.
+<br/>
+See LatLonBoxType.Rdb in Books/XMLTechnologies/XMLSchema
 </item>
 
 <item status="done">
