@@ -1,4 +1,9 @@
-<topics>
+<?xml version="1.0" encoding="utf-8"?>
+<topics xmlns:r="http://www.r-project.org">
+<?xml-stylesheet type="text/xsl" href="../../Docs/XSL/Todo.xsl" ?> 
+<topic>
+<title>General</title>
+<items>
 <item status="fixed">
 Defining ObjectType in kml21.xsd doesn't use classes ID and NCName.
 The PrimitiveSchemaType in sch[[1]]$ObjectType@slotTypes[[1]]@type
@@ -109,5 +114,6 @@ Have to use a list as the base class for RestrictedListType
 (and SimpleSequenceType) when the element type is a sub-class
 of a primitive type, e.g. "string" or "character".  See <ref ref="#string"/>
 </item>
-
+</items>
+</topic>
 </topics>
