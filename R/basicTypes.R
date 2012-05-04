@@ -55,8 +55,8 @@ XMLSchemaTypes <-
        "numeric"   = list("xsi:type" = "xsd:integer", type = "integer"),
        "logical"   = list("xsi:type" = "xsd:boolean", type = "boolean"),
 
-       "character"   = list("xsi:type" = "xsd:ID", type = "ID"),
-       "character"   = list("xsi:type" = "xsd:NCName", type = "NCName"),              
+       "ID"   = list("xsi:type" = "xsd:ID", type = "ID"),
+       "NCName"   = list("xsi:type" = "xsd:NCName", type = "NCName"),              
 
 #TMP       "POSIXct"   = list("xsi:type" = "xsd:date", type = "date"),
        # Use SOAPDate for the as.SOAPDate to be able to allow both strings and POSIXt types.
@@ -131,7 +131,7 @@ setAs("POSIXlt", "date", as.dateTime)
 
 checkNCName =
   function(object) {
-    if(!grepl("^[A-Za-z_][A-Za-z0-9.-_]*", object))
+    if(length(object) && !grepl("^[A-Za-z_][A-Za-z0-9.-_]*", object))
       return("invalid string for NCName")
     TRUE
   }
