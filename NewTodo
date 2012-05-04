@@ -1,4 +1,9 @@
 <topics>
+<item status="fixed">
+Defining ObjectType in kml21.xsd doesn't use classes ID and NCName.
+The PrimitiveSchemaType in sch[[1]]$ObjectType@slotTypes[[1]]@type
+has a value for Rname that is "character" and not ID
+</item>
 
 <item>
 In processing egquery.xsd, eGCQueryResultType doesn't recognize
@@ -87,7 +92,7 @@ an R class and a fromConverter.
 These elements are optional. So we have to check if they are present.
 </item>
 
-<item>
+<item status="done">
 What is the difference between SchemaAnyType (fewer occurrences) and AnySchemaType.
 <br/>
 I have removed the former now. Test!!!!!
@@ -98,6 +103,7 @@ Define a "string" class that extends/contains "character".
 Problem is that we lose the class of the elements
 as they become "character".
 </item>
+
 <item>
 Have to use a list as the base class for RestrictedListType 
 (and SimpleSequenceType) when the element type is a sub-class

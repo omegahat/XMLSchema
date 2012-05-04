@@ -1212,7 +1212,7 @@ function(i, where = globalenv(),
          name = getName(i),
          ignorePending = FALSE, opts = new("CodeGenOpts"))
   {
-if(i@name == "itemIconStateType") browser()    
+#if(i@name == "itemIconStateType") browser()    
     # ensure the element type is defined.
   elType = resolve(i@elType, types)
   defClass(elType, where, namespaceDefs, verbose, pending, classes, types,
