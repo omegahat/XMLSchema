@@ -10,5 +10,8 @@ XMLSchema:::defClass(all[["orderidtype"]])
 
 try(new("orderidtype", "bob"))
 
+TRUE
+
+
 
 

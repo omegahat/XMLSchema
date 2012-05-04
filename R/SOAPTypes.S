@@ -61,7 +61,7 @@ function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(),
        obj@Rname = names(XMLSchemaTypes)[ i ]
 
        if(obj@Rname == "string") #XXXX
-          obj@Rname = "character"
+           obj@Rname = "character"
        
        if("from" %in% names(tmp)) {
 
@@ -86,7 +86,9 @@ function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(),
   obj@nsuri = nsuri
   obj@count = counts
   if(length(obj@Rname) == 0) # XXX Do we definitely know this.
-    obj@Rname = name
+     obj@Rname = name
+  if(length(obj@Rname) && obj@Rname == "string")
+     obj@Rname = name
 
   obj
 }

@@ -13,7 +13,10 @@ DefaultFunctionNamespace = getNamespace("XML")
 setClass("URI", contains = "character")
 
 setClass("string", contains = "character")
-
+setAs("XMLAbstractNode", "string",
+      function(from)
+        new("string", xmlValue(from)))
+      
 ################################################################
 
 # Description of a SOAP type 
@@ -155,15 +158,19 @@ setClass("XMLSchemaComponent")
 
 # Was SchemaType and not BasicSchemaType. But needed the fromConverter. See 
 #   http://www.weather.gov/forecasts/xml/DWMLgen/wsdl/ndfdXML.wsdl
-setClass("RestrictedStringType", contains = "BasicSchemaType")
+setClass("RestrictedStringType", contains = "BasicSchemaType",
+            prototype = list(Rname = "string"))
 #              prototype = list(ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema")))
 setClass("RestrictedStringDefinition", representation(values = "character"), contains = "RestrictedStringType")
 setClass("RestrictedStringPatternDefinition", representation(pattern = "character"), contains = "RestrictedStringType")
 
 
+
 setClass("RestrictedNumber", representation(range = "numeric", inclusive = "logical"), contains = "BasicSchemaType")
-setClass("RestrictedDouble", contains = "RestrictedNumber")
-setClass("RestrictedInteger", contains = "RestrictedNumber")
+setClass("RestrictedDouble", contains = "RestrictedNumber",
+                   prototype = list(Rname = "numeric"))
+setClass("RestrictedInteger", contains = "RestrictedNumber",
+                         prototype = list(Rname = "integer"))
 
 setClass("RestrictedHexBinary", representation(length = "integer", pattern = "character"), # pattern is a regular expression.
                                   contains = "RestrictedStringType")

@@ -23,8 +23,8 @@ setGeneric("resolve", function(obj, context, namespaces = character(), recursive
                        
                        if(is.null(xrefInfo) && is(context, "SchemaCollection"))
                           xrefInfo = context@circularDefs
-
-                       ans = standardGeneric("resolve")
+#XXXXXXXX  was = We could break everything by using this version
+                       ans <- standardGeneric("resolve")
                        if(!is.null(ans) && is(obj, "GenericSchemaType") && is(ans, "GenericSchemaType")) {
                           ans@default = optionalDefaultValue(ans, obj@default)
                         }
@@ -36,7 +36,7 @@ setMethod("resolve", c("SelfRef", "SchemaCollection"),
           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
              i = match(obj@nsuri, names(context))
              if(is.na(i)) {
-               stop("Can't find the schema with UR")
+               stop("Can't find the schema with URI ", obj@nsuri)
              }
              context[[i]][[obj@name]]
           })
@@ -73,7 +73,7 @@ setMethod("resolve", c("SchemaComplexType", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
              if(length(obj@content) == 1)
                  return(resolve(obj@content, context, namespaces, recursive, raiseError, xrefInfo))
-#             browser()
+
 warning("probably need to do something different in resolve(SchemaComplexType, SchemaCollection) ", obj@name)
          #XXXX not appropriate
              resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo)                                      
@@ -91,7 +91,8 @@ setMethod("resolve", c("SchemaTypeReference", "list"),
 setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
 
-             if(!is.null(xrefInfo) && !is.null(xrefInfo$crossRefNames) && sprintf("%s:%s", obj@nsuri, obj@name) %in%  xrefInfo$crossRefNames) {
+             if(!is.null(xrefInfo) && !is.null(xrefInfo$crossRefNames) &&
+                      sprintf("%s:%s", obj@nsuri, obj@name) %in%  xrefInfo$crossRefNames) {
                    tp = xrefInfo$types
                    w = sapply(tp, function(tt) {
                                       i = match(obj@name, tt@subclasses)
@@ -100,7 +101,6 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
                    return(tp[w][[1]])
              }
                 
-             
              ans = resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo)
              ans@default =  optionalDefaultValue(ans, obj@default)
              ans

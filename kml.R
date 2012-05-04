@@ -50,4 +50,17 @@ as(newXMLNode("itemIconStateEnum", "open"), "itemIconStateEnum")
 new("itemIconStateEnum", "open")
 try(new("itemIconStateEnum", "openx"))
 
+nd = newXMLNode("itemIconStateType",
+                 newXMLNode("string", "open"),
+                 newXMLNode("string", "closed"))
+
+as(nd, "itemIconStateType")
+
+
+
+nd = newXMLNode("itemIconStateType",
+                 newXMLNode("string", "openx"),
+                 newXMLNode("string", "closed"))
+try(as(nd, "itemIconStateType"))
+
 

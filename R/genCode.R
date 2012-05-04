@@ -198,8 +198,8 @@ function(i, where = globalenv(),
               }
              })    
     
-  
-    def = standardGeneric("defClass")
+#XXXX  was =  
+    def <- standardGeneric("defClass")
     
     if(!is.null(def)) {
 
@@ -315,7 +315,7 @@ if(showDefClassTrace)
                TRUE
             }
             body(valid)[[2]][[3]] = i@values
-            def = setClass(name, contains = "character", validity = valid, where = where)
+            def = setClass(name, contains = "string", validity = valid, where = where)
             
 
          } else if(is(i, "RestrictedSetInteger")) {
@@ -493,10 +493,10 @@ setMethod("defClass", "RestrictedStringPatternDefinition",
                    name = getName(i),
                    ignorePending = FALSE, opts = new("CodeGenOpts")) {
 
-        #Set the validity to enforce the pattern is met.
-        #??? Can we use i@fromConverter
+           #Set the validity to enforce the pattern is met.
+           #??? Can we use i@fromConverter
         valid = makeRestrictedPatternStringValidity(i@pattern, i@name)
-        def = setClass(name, contains = "character", where = where, validity = valid)
+        def = setClass(name, contains = "string", where = where, validity = valid)
        
         def
      })
@@ -1129,7 +1129,7 @@ function(i, where = globalenv(),
          name = getName(i),
          ignorePending = FALSE, opts = new("CodeGenOpts"))
 {
-
+      # ??? Isn't this now in @Rname
    base = switch(class(i), "RestrictedInteger" = "integer", "RestrictedDouble" = "numeric")
    def = setClass(i@name, contains = base, where = where)
    f = makeRestrictedFunc(i@name, base, i@range, i@inclusive)
@@ -1209,10 +1209,19 @@ function(i, where = globalenv(),
          name = getName(i),
          ignorePending = FALSE, opts = new("CodeGenOpts"))
   {
+if(i@name == "itemIconStateType") browser()    
     # ensure the element type is defined.
- defClass(i@elType, where, namespaceDefs, verbose, pending, classes, types,
-           baseClass, force, name = getName(i@elType), ignorePending, opts)
- 
+  elType = resolve(i@elType, types)
+  defClass(elType, where, namespaceDefs, verbose, pending, classes, types,
+                       baseClass, force, name = getName(i@elType), ignorePending, opts)
+
+  
+  if(is(i@elType, "SchemaTypeReference")) {
+     i@baseType = getListBaseType(elType)
+     i@fromConverter = getListTypeConverter(i@name, elType, i@baseType)
+     i@elType = elType
+  }
+    
     #XXX Get the base type based on the type of the element restriction.
       def = setClass(i@name, contains = i@baseType, where = where)
 

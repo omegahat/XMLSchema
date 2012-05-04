@@ -311,25 +311,50 @@ zeroLengthArrays <-
                      "xsd:decimal" = numeric(0))
 
 
+getListBaseType =
+function(elType)
+{
+ if(is(elType, "PrimitiveSchemaType") || is(elType, "RestrictedStringDefinition")
+           || is(elType, "RestrictStringPatternDefinition") || is(elType, "RestrictedNumber")) {
+     if(length(elType@Rname) == 0)
+         browser() #XXX
+    
+      ans = elType@Rname
+      # For now, we can't extend, e.g. , character and have the individual elements
+      # maintain their classes.  So we'll use a list to maintain these.
+      # We might collapse to the vector type and put an attribute to identify
+      # the common type, e.. itemIconStateEnum from the kml schema.
+      if(!( ans %in% c("integer", "logical", "numeric", "character")))
+        "list"
+      else
+         ans
+  } else
+    "list"
+}
+
+getListTypeConverter =
+function(name, elType, baseType)
+{
+  # if the elType is a primitive, use xmlSApply to make a vector.
+  fun = function(from) new(name, xmlApply(from, as, typeName))
+  body(fun)[[2]] = name
+  body(fun)[[3]][[4]] = elType@name
+  if(baseType != "list")
+    body(fun)[[3]][[1]] = `xmlSApply`
+    
+  fun
+}
+
 
 processSimpleList =
 function(type, name, namespaceDefs = NULL)
 {
   type = xmlGetAttr(type, "itemType")
-if(name == "itemIconStateType") browser()
+
   elType = SchemaType(type, namespaceDefs = namespaceDefs)
   def = new("RestrictedListType", name = name, elType = elType, elementType = type)
-  if(is(elType, "PrimitiveSchemaType")) {
-    if(length(elType@Rname) == 0)
-        browser() #XXX
-    def@baseType = elType@Rname #
-  }
-  
-  # if the elType is a primitive, use xmlSApply to make a vector.
-  fun = function(from) new(name, xmlApply(from, as, typeName))
-  body(fun)[[2]] = def@name  
-  body(fun)[[3]][[4]] = elType@name
-  def@fromConverter = fun
+  def@baseType = getListBaseType(elType)
+  def@fromConverter = getListTypeConverter(def@name, elType, def@baseType)  
 
   def
 }

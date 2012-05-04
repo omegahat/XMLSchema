@@ -150,6 +150,7 @@ function(type, name, nsuri = character())
      toFun = makeValueToConverter(name, nsuri, DefaultFunctionNamespace)
     
      new("RestrictedStringDefinition", name = name, values = vals,
+                  Rname = name,
                   ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema"),
                   toConverter = toFun,
                   fromConverter = fun)
