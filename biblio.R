@@ -9,3 +9,5 @@ tt = newXMLNode("Authors",
 
 as(tt, "Authors")
 
+fromXML(tt)
+

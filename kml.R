@@ -1,5 +1,6 @@
 library(XMLSchema)
-sch = readSchema("~/GitWorkingArea/XMLSchema/inst/samples/kml21.xsd")
+#sch = readSchema("~/GitWorkingArea/XMLSchema/inst/samples/kml21.xsd")
+sch = readSchema("~/GitWorkingArea/XMLSchema/inst/samples/ogckml22.xsd")
 invisible(defineClasses(sch))
 
 
@@ -81,3 +82,15 @@ nn = newXMLNode("Snippet", attrs = c(maxLines = 3),
                  "This is some text as part of a snippet. Note the attribute value")
 f(nn)
 as(nn, "SnippetType")
+
+
+
+##############
+kdoc = xmlParse("inst/samples/KML_sample_21.kml")
+ov = getNodeSet(kdoc, "//x:GroundOverlay", "x")
+
+as(ov[[1]], "GroundOverlay")
+#XMLSchema:::defineElementClasses(sch)
+
+fromXML(ov[[1]], type = "http://earth.google.com/kml/2.1")
+fromXML(ov[[1]], type = `http://earth.google.com/kml/2.1`)

@@ -16,6 +16,11 @@ setClass("string", contains = "character")
 setAs("XMLAbstractNode", "string",
       function(from)
         new("string", xmlValue(from)))
+
+
+# A class to map the names of elements to the R class to which they correspond.
+# e.g. <kml> - KmlType
+setClass("XMLElementTypeMap", representation(names = "character"), contains = "character")
       
 ################################################################
 

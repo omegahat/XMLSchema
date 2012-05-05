@@ -6,56 +6,28 @@
 <title>General</title>
 <items>
 
-<item status="done">
-Use createSOAPConverter to create the fromConverter when we are defining the classes.
-<br/>
-SnippetType is getting the wrong converter, yet createSOAPConverter for the type is correct.
-See kml.R.
-In defClass(), the type@slotTypes[[1]] is a PrimitiveSchemaType, not an AttributeDef.
-This is because it is coming in indirectly from a field in FeatureType.
-When we resolve that, we get a different definition of 
-<br/>
-Temporarily changed getName() and also had resolve() method for AttributeDef
-return the AttributeDef but with the type resolved.
-We may need to back these out, but defineClasses() seems to complete.
+<item>
+readSchema fails for ogckml22.xsd
 </item>
 
 <item>
-Implement method for createSOAPConverter for SchemaGroupType.
-</item>
-
-<item status="done">
-In <r:func>genSlotFromConverterCode</r:func>, we are getting the name of the element not the type
-for <r:class>LocalElement</r:class>.  See <r:func>getRTypeFromSOAP</r:func>
+defineClass(pmmlSchema) fails.
 <br/>
-Extended <r:func>getRTypeFromSOAP</r:func> to look at its first argument
-and to process a GenericSchemaType and a LocalElement to get the name, then map it.
-</item>
-
-<item status="done">
-When creating the prototype for a class definition,
-make certain we use the default value for an attribute.
-<br/>
-See SnippetType and vec2Type in kml21.
-</item>
-
-<item>
-How to get fromXML(node) to recognize that there is a mapping
-from the element name to a class when the element name does not
-correspond to an actual class?
-<br/>
-Do we define a class for the element?
-<br/>
-Problem is multiple elements may map to the same name.
-But not at the top-level.  Can we use composite names to identify the class
-for internal/local elements.
-</item>
-
-
-<item status="done">
-Defining ObjectType in kml21.xsd doesn't use classes ID and NCName.
-The PrimitiveSchemaType in <r:expr>sch[[1]]$ObjectType@slotTypes[[1]]@type</r:expr>
-has a value for Rname that is "character" and not ID
+Ending up with a call o getClassDef() with "" as the name of the class.
+This happens as part of processing the ChildParent type.
+In the call to defineClassDefinition for this, we get
+<r:code>
+sapply(i@slotTypes, class)
+<r:output><![CDATA[
+                   Extension    TableLocatorOrInlineTable 
+                   "Element"            "UnionDefinition" 
+                  childField                  parentField 
+          "SchemaStringType"           "SchemaStringType" 
+            parentLevelField                  isRecursive 
+          "SchemaStringType" "RestrictedStringDefinition" 
+]]></r:output>
+</r:code>
+We are dying in the 6th of these which is a SchemaStringType.
 </item>
 
 <item>
@@ -91,6 +63,140 @@ needs an intermediate class that extends the generic list type.
 Is this similar to Authors in biblio.xsd, i.e.
 making a class that is a list containing elements of a data type.
 </item>
+
+
+<item status="done">
+Use createSOAPConverter to create the fromConverter when we are defining the classes.
+<br/>
+SnippetType is getting the wrong converter, yet createSOAPConverter for the type is correct.
+See kml.R.
+In defClass(), the type@slotTypes[[1]] is a PrimitiveSchemaType, not an AttributeDef.
+This is because it is coming in indirectly from a field in FeatureType.
+When we resolve that, we get a different definition of 
+<br/>
+Temporarily changed getName() and also had resolve() method for AttributeDef
+return the AttributeDef but with the type resolved.
+We may need to back these out, but defineClasses() seems to complete.
+</item>
+
+<item>
+How do we end up wth SchemaComplexType at the top-level of the schema?
+We only see them in the XMCDA schema in all our sample schema (see check.R).
+It looks like these should turn into ClassDefinition.
+For example, the "parameters" type is a sequence and an attribute group.
+<br/>
+<b>So implement this case in processSchemaType</b>
+<br/>
+Map the SchemaComplexType in XMCDA to ClassDefinition types.
+</item>
+
+
+<item>
+Implement method for createSOAPConverter for SimpleSequenceType.
+ UnionDefinition (is this already done generically). 
+SchemaGroupType, SchemaComplexType.
+<br/>
+Do we want to do Element and SimplElement?
+<br/>
+For SimpleSequenceType, move the code from createArrayClass to <r:func>createSOAPConverter</r:func>
+but we need to compute the base type and the type of the elements.
+</item>
+
+<item status="done">
+In <r:func>genSlotFromConverterCode</r:func>, we are getting the name of the element not the type
+for <r:class>LocalElement</r:class>.  See <r:func>getRTypeFromSOAP</r:func>
+<br/>
+Extended <r:func>getRTypeFromSOAP</r:func> to look at its first argument
+and to process a GenericSchemaType and a LocalElement to get the name, then map it.
+</item>
+
+<item status="done">
+When creating the prototype for a class definition,
+make certain we use the default value for an attribute.
+<br/>
+See SnippetType and vec2Type in kml21.
+</item>
+
+<item>
+How to get fromXML(node) to recognize that there is a mapping
+from the element name to a class when the element name does not
+correspond to an actual class?
+<br/>
+Do we define a class for the element?
+<br/>
+Problem is multiple elements may map to the same name.
+But not at the top-level.  Can we use composite names to identify the class
+for internal/local elements.
+<br/>
+Another approach is store the information about
+elements to actual classes in a variable that we can identify
+from the root of the document. We know the 
+names of the possible root types, so we can create a
+variable for each of these. To avoid conflicts, we
+could use the namespace URI in the name.
+This would be even easier if we could put the schema classes
+into  a separate environment, e.g. package.
+For example,  in kml21
+BalloonStyle corresponds to BalloonStyleType,
+and GroundOverlay corresponds to GroundOverlayType.
+
+<br/>
+So let's find the Element and SimpleElements in the schema
+and get the names of their R types. 
+<r:code>
+library(XMLSchema); sch = readSchema("~/GitWorkingArea/XMLSchema/inst/samples/kml21.xsd")
+e = sapply(sch[[1]], function(x) is(x, "Element") || is(x, "SimpleElement"))
+elementMap = sapply(sch[[1]][e], function(x) x@type@Rname)
+</r:code>
+To see the comparison between the names
+<r:code>
+cbind(names(sapply(sch[[1]][e], function(x) x@type@Rname)), as.character(sapply(sch[[1]][e], function(x) x@type@Rname)))
+</r:code>
+<r:var>elementMap</r:var> is the variable we want. We can use the name of the 
+node to 
+We need to ensure these types are resolved first and then
+compute the Rname to be certain we have the correct name.
+
+<br/>
+We have defined a method for <r:func>fromXML</r:func> to be given
+or to find this map based on  the URI or being explicitly passed
+it by value (or by name).
+<b>We need to ensure that this is used recursively.</b>
+<br/>
+We could just append Type to get the class, but this is just a convention
+and from the comparison above it doesn't work, styleUrl - URI, kml - KmlType
+<br/>
+Another approach is to define a 
+class for each element that extends the associated type.
+Then we define a coerce method for an XMLAbstractNode
+<r:code>
+setClass("GroundOverlay", contains = "GroundOverlayType")
+setAs("XMLAbstractNode", "GroundOverlay", function(from) as(from, "GroundOverlayType"))
+</r:code>
+<b>Get rid of warning about prototype in setClass call</b>
+Then <r:expr>as(ov[[1]], "GroundOverlay")</r:expr> should do its job.
+</item>
+
+<item status="fix">
+Make the Element classes extend the corresponding type in makeElementClassDef
+and not XMLSchemaFakeClass.  Issue with prototypes being  S4 and list and not reconcilable.  
+</item>
+
+<item status="done">
+define classes correponding to Element objects
+<br/>
+Make this optional.
+<br/>
+See defineElementClasses parameter in <r:func>defineClasses</r:func>
+and the function named <r:func>defineElementClasses</r:func>.
+</item>
+
+<item status="done">
+Defining ObjectType in kml21.xsd doesn't use classes ID and NCName.
+The PrimitiveSchemaType in <r:expr>sch[[1]]$ObjectType@slotTypes[[1]]@type</r:expr>
+has a value for Rname that is "character" and not ID
+</item>
+
 
 <item status="check">
 <i>Check SSOAP to see if this has broken anything.</i>
@@ -149,18 +255,14 @@ remove the kml.xml file in inst/samples/
 in notes/
 </item>
 
-<item>
-define classes correponding to Element objects
-<br/>
-Make this optional.
-</item>
+
 
 <item status="low">
 Pretty print the description objects.
 Define <r:func>show</r:func> methods.
 </item>
 
-<item>
+<item status="done">
 SimpleSequenceType: biblio.xsd and Authors
 <br/>
 What about this? On my  hand-written notes.
@@ -173,29 +275,17 @@ We should be able to move this to <r:func>createSOAPConverter</r:func>
 but we need to compute the base type and the type of the elements.
 </item>
 
+
+
+<item status="medium">
+Should we check the validity for length =  0 in
+a SimpleSequenceType if the minOccurs is 1.
+</item>
+
 <item status="low">
 Graphical display of class hierarchy.
 </item>
 
-<item>
-defineClass(pmmlSchema) fails.
-<br/>
-Ending up with a call o getClassDef() with "" as the name of the class.
-This happens as part of processing the ChildParent type.
-In the call to defineClassDefinition for this, we get
-<r:code>
-sapply(i@slotTypes, class)
-<r:output><![CDATA[
-                   Extension    TableLocatorOrInlineTable 
-                   "Element"            "UnionDefinition" 
-                  childField                  parentField 
-          "SchemaStringType"           "SchemaStringType" 
-            parentLevelField                  isRecursive 
-          "SchemaStringType" "RestrictedStringDefinition" 
-]]></r:output>
-</r:code>
-We are dying in the 6th of these which is a SchemaStringType.
-</item>
 
 <item status="check">
 Default value for Extension.row in pmml is wrong - character(). Should be NULL.

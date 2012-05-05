@@ -38,7 +38,8 @@ defineClasses =
   #
 function(types,  where = globalenv(), namespaceDefs = list(), verbose = FALSE,
           baseClass = BaseClassName, force = FALSE, opts = new("CodeGenOpts"),
-          pending = new.env(hash = TRUE, emptyenv()), classes = new.env(hash = TRUE, emptyenv())  )
+          pending = new.env(hash = TRUE, emptyenv()), classes = new.env(hash = TRUE, emptyenv()),
+          defineElementTypeMap = TRUE, defineElementClasses = TRUE)
 {
   if(is(types, "SchemaTypes"))
     types = structure(list(types), class = "SchemaCollection")
@@ -48,6 +49,25 @@ function(types,  where = globalenv(), namespaceDefs = list(), verbose = FALSE,
            function(schema)
                lapply(schema, defClass, where, namespaceDefs, verbose, pending,
                                         classes, types, baseClass, force, opts = opts))
+
+   map = createElementTypeMap(types)
+   if(defineElementClasses) {
+      setClass("XMLSchemaFakeClass", where = where)
+      defineElementClasses (map = map, where = where)
+    }
+
+  
+  if(is.character(defineElementTypeMap)
+            || as.logical(defineElementTypeMap)) {
+
+      id = if(is.character(defineElementTypeMap))
+               defineElementTypeMap
+           else
+                names(types)[1]
+      
+      assign(id, map, where)
+    }
+  
   ls(classes)
 }
 
@@ -203,7 +223,7 @@ function(i, where = globalenv(),
 #XXXX  was =  
     def <- standardGeneric("defClass")
     
-    if(!is.null(def)) {
+    if(!is.null(def) && !is(type, "UnionDefinition")) {
 
       if(is(type, "BasicSchemaType")) {
         if(verbose)
@@ -222,10 +242,10 @@ function(i, where = globalenv(),
       }         
 
       assign(name, def, classes)
+    }
 
-      def
-    } else
-      NULL    
+    def
+     
 })
 
 if(FALSE) {
@@ -1290,4 +1310,47 @@ function(def, types)
       getClassDef(class, package = "XMLSchema")
    else
       class
+}
+
+
+
+createElementTypeMap =
+  #
+  # This computes the mapping between an XML element and its type.
+  #
+function(schema, simple = FALSE)
+{
+      # should deal with recursive schema
+   els = unlist(schema, recursive = FALSE)
+   e = sapply(els, function(x) is(x, "Element") || is(x, "SimpleElement"))
+   raw = structure(sapply(els[e], function(x) x@type@Rname),
+                    names = sapply(els[e], function(x) x@name),
+                    class = "XMLElementTypeMap")
+   if(simple)
+       return(raw)
+   
+   elementMap = sapply(els[e], function(x) x@type@Rname)
+   structure(c(elementMap, raw), class = "XMLElementTypeMap")
+ }
+
+defineElementClasses =
+function(types, where = globalenv(), map = createElementTypeMap(types, TRUE))  
+{
+  mapply(makeElementClassDef,
+           names(map), map, MoreArgs = list(where = where))
+}
+
+makeElementClassDef =
+function(className, baseType, where = globalenv())
+{
+    # We are using a fake class as trying to extend the other class
+    # causes problems with the prototype.
+    # Reinstate this when we get a chance.
+  def = setClass(className, contains = "XMLSchemaFakeClass", where = where) # baseType
+  fun = function(from)
+             as(from, "GroundOverlayType")
+  body(fun)[[3]] = baseType
+  environment(fun) = globalenv()
+  setAs("XMLAbstractNode", className, fun, where = where)
+  def
 }
