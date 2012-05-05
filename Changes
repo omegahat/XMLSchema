@@ -1,5 +1,9 @@
 0.8-0
 
+  *    Significant improvements and coverage to the code.
+
+  *    Enhanced creation of converters from XML to data types defined in the schema.
+
   *    Changed names of classes, functions and methods with SOAP in them to Schema
        to better reflect the generality of the package and independence from SOAP.
 
@@ -13,6 +17,13 @@
        as the base class is BasicSchemaType.
 
   *    Define setAs("XMLAbstractNode", .) for RestrictedNumber types.
+
+  *    Method for fromXML() with just a node and not type or converter arguments, e.g. fromXML(node)
+       and this assumes a coerce method for the class given by the name of the node.
+  
+  *    fromXML() method with just the node passed to it attempts  to use the class system to find
+       a target using the name of the XML node. This uses that class name or attempts to lookup
+       an element-to-class map computed from the schema when the classes were generated.
 
 0.7-0
  
