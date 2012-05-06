@@ -1,20 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <?xml-stylesheet type="text/xsl" href="/Users/duncan/Classes/StatComputing/XDynDocs/inst/XSL/OmegahatXSL/Todo.xsl" ?> 
-
-<topics xmlns:r="http://www.r-project.org">
+<topics xmlns:r="http://www.r-project.org"
+	 xmlns:xml="http://www.w3.org/XML/1998/namespace">
 <topic>
 <title>General</title>
 <items>
+<!-- Invoke with 
+       "open -a /Applications/Google\ Chrome.app Todo.xml - -args - -allow-file-access-from-files" 
+  You have to join the "- -" into -\-. They are here in a comment  -->
+
+<item status="done">
+MODIS example for SSOAP not putting product name in the body of the request
+for def@functions$getbands("MCD12Q1").
+See modis.R
+<br/>
+We leave it to standardGeneric() to add the content to the node if literal is FALSE.
+But our generic had ans = standardGeneric() and surrounding code.
+But the change in R meant that this was defaulting to a simple generic with no surrounding
+code. So the values were never being inserted into the xml.
+</item>
+<item status="done">
+SSOAP fails for kegg.R
+<r:code>
+debug(SSOAP:::writeTypes)
+o = kegg.iface@functions$get_pathways_by_genes("eco:b0078")
+</r:code>
+The types is 
+<programlisting><![CDATA[
+          xsi:type SOAP-ENC:arrayType 
+  "SOAP-ENC:Array"            "NA[1]" 
+]]></programlisting>
+This should be string[1], not NA[1], of course.
+</item>
+
+<item status="low">
+Generalize how we compute the as.string/as.character name in SOAPTypes.S#56 and genCode.R#733
+</item>
+
+<item>
+Look into why we needed the call to <r:func>findSelfRefs</r:func> in resolve.
+What does it do?  
+<br/>
+Do we just need to make that smarter so that it doesn't kill the wrong thing,
+e.g. egQueryResultType's ResultItem LocalElement slot.
+</item>
+<item>
+It would be good to use an enviroment for SchemaCollection and SchemaTypes
+so that we can change and add items as we process things.
+We could insert the resolved definitions and avoid doing it over again.
+We can add new items when we define intermediate classes such as local
+data types within elements.
+</item>
+
+<item>
+<b>Check</b>
+Add method for <r:expr>as(node, "list")</r:expr> and implement it as
+<r:expr>xmlSApply(node, fromXML)</r:expr>.
+Implement this for <r:func>fromXML</r:func> also.
+</item>
 
 <item>
 readSchema fails for ogckml22.xsd
 </item>
 
 <item>
+<b>Is this working now?</b>
+createSOAPConverter() failing for SimpleSequenceType in pmml
+because no name for slot (and NA for type).  Class "row" again!
+</item>
+
+<item>
+defineClasses(pmml) fails because ListOfANY is not found.
+Part of "TableLocatorOrInlineTable", then Extension.row, then "row".
+The last of these has a repn with ListOfANY. 
+Need to have the class check the validity of the length, i.e. minOccurs=2.
+<br/>
+Do we really need ListOfANY. Can't we just extend list.
+<br/>
+Add validity for length.
+</item>
+
+<item>
+<b>Check how the attribute is mapped to R</b>
+<br/>
 defineClass(pmmlSchema) fails.
+Now infinite recursion.
 <br/>
 Ending up with a call o getClassDef() with "" as the name of the class.
 This happens as part of processing the ChildParent type.
+As we descend down, we get to InlineTable and try to define this.
+This has slots Extension and row. At this point, Rname and name on the
+<r:expr>i@slotTypes$row@Rname</r:expr> are correct, i.e. "row".
+But the names of the slots in <r:expr>names(i@slotTypes$row@slotTypes)</r:expr> is just "".
+And that is true of the original object in our schema returned by <r:func>readSchema</r:func>, i.e
+<r:expr>names(sch[[1]]$row@type@slotTypes)</r:expr>.  So that is where our problem may lie.
+Similarly, <r:expr>sch[[1]]$row@type@slotTypes[[1]]@Rname</r:expr> gives character(0)
+and 
+<r:expr>sch[[1]]$row@type@slotTypes[[1]]@name</r:expr> gives NA.
+<b>Fix up the hacks in processSchemaElement with note "XXX Forcing"</b>
+<br/>
+With this force-fixes, we now get infinite recursion when defining MiningModel.
+<br/>
+One of the problems with this name the type the same as the element is that
+when we attempt to resolve the type by the name, we (may) get the element
+<br/>
+
+When we get down into <r:class>defnClass</r:class> for "row"
+<br/>
 In the call to defineClassDefinition for this, we get
 <r:code>
 sapply(i@slotTypes, class)
@@ -27,13 +119,50 @@ sapply(i@slotTypes, class)
           "SchemaStringType" "RestrictedStringDefinition" 
 ]]></r:output>
 </r:code>
-We are dying in the 6th of these which is a SchemaStringType.
+We are dying in the 6th of these which is the isRecursive.
+The problem is that there is no type attribute.
+The type is given as a child of the <xml:tag>attribute</xml:tag>.
 </item>
 
 <item>
-In processing egquery.xsd, eGCQueryResultType doesn't recognize
+In processing egquery.xsd, eGQueryResultType doesn't recognize
 the maxOccurs for the slot named ResultItem (with @type ResultItemType) and so just has one rather than a list
 of them.
+<br/>
+In the call to defClass, we end up with
+<r:code>
+i@name
+class(i@slotTypes[[2]])   # ClassDefinition
+class(sch[[1]]$eGQueryResultType@slotTypes[[2]]) # LocalElement
+i@slotTypes[[2]]@count   # numeric(0)
+</r:code>
+So we have gone from a LocalElement with a count > 1 to just an instance.
+<br/>
+Resolving the local element directly
+<r:code>
+r = XMLSchema:::resolve(sch[[1]]$eGQueryResultType@slotTypes[[2]], sch)
+</r:code>
+results in a LocalElement. The count on its @type is numeric(0).
+But
+<r:code>
+tt = XMLSchema:::resolve(sch[[1]]$eGQueryResultType, sch)
+class(tt@slotTypes[[2]])
+</r:code>
+loses the LocalElement and just returns the ClassDefinition for ResultItemType.
+So let's look at where in the recursive <r:func>resolve</r:func> this happens.
+<br/>
+<b>The problem is that we were stripping the LocalElement in the call to 
+<r:func>findSelfRefs</r:func> and so <r:func>resolve</r:func> was never seeing that 
+<r:class>LocalElement</r:class>.
+This happens when calling <r:func>findSelfRefs</r:func> on the eGQueryResultType
+object (not the LocalElement object).</b>
+<br/>
+This class is being defined by forcing the dependencies when defining Result.
+And in the Result description in defineClassDefinition,  we have
+<r:expr>class(i@slotTypes[[2]]@type@slotTypes[[2]])</r:expr> returning a ClassDefinition
+and not a LocalElement.  So somehow - perhaps during resolve() - we have lost that information.
+How should we handle it - return the LocalElement, or make the ClassDefinition into a RestrictedListType or
+  include the count and have that be used when defining the actual class.
 <br/>
 After we readSchema(), we have the correct information. So it is when we define the class.
 The call to createClassRepresentation() returns "ResultItemType" for the second slot
@@ -59,6 +188,10 @@ This is probably okay and then we recognize that we have a type
 and a number of elements. So we could create an intermediate class,
 or use a generic list with a filter on the types. This still
 needs an intermediate class that extends the generic list type.
+<br/>
+We could make eGQueryResultType an extension of  list with an ERROR slot.
+Alternatively, make it a new class with 2 slots - ResultItem and ERROR, 
+and ResultItem would be a qualified list class.
 <br/>
 Is this similar to Authors in biblio.xsd, i.e.
 making a class that is a list containing elements of a data type.

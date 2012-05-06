@@ -21,7 +21,10 @@ setAs("XMLAbstractNode", "string",
 # A class to map the names of elements to the R class to which they correspond.
 # e.g. <kml> - KmlType
 setClass("XMLElementTypeMap", representation(names = "character"), contains = "character")
-      
+
+
+setClass("ListOfANY", contains = "list")
+
 ################################################################
 
 # Description of a SOAP type 

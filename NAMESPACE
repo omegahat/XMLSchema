@@ -73,3 +73,7 @@ export(expandS4, writeClassDef)  # , discardEnvironment)
 exportMethods(expandS4)
 export(exportClassDefs, exportClassDef)
 
+
+exportClass(ListOfANY)
+#export(as.string)
+

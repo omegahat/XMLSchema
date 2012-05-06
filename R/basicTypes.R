@@ -31,9 +31,15 @@ function(x) {
 # Is there an int? Yes, it is restricted from other types.
 # See the tree at the top of section 3.2 of the document above.
 
+#as.string = as.character
+  
+
 XMLSchemaTypes <-
-  list(# "character" = list("xsi:type" = "xsd:string", type = "string"),
-       "string" = list("xsi:type" = "xsd:string", type = "string", soapClass = "SchemaStringType"),       
+  list(
+         #!!! string must appear before character since they will both match on type.
+       "string" = list("xsi:type" = "xsd:string", type = "string", soapClass = "SchemaStringType",
+                          from = as.character),
+       "character" = list("xsi:type" = "xsd:string", type = "string"),       
        "normalizedCharacter" = list("xsi:type" = "xsd:string", type = "normalizedString"),
        
        "numeric"   = list("xsi:type" = "xsd:float", type = "float"),

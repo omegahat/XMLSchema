@@ -51,8 +51,12 @@ function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(),
        k = XMLSchemaTypes[[ i ]][["soapClass"]]
        obj = new(if(!is.null(k)) k else "PrimitiveSchemaType")
 
-          # Look for converter. These will conver the value, not the XML node
-       funName = paste("as", names(XMLSchemaTypes)[ i ], sep=".")
+          # Look for converter. These will convert the value, not the XML node
+       typeName = names(XMLSchemaTypes)[ i ]
+           #XXXX generalize this so it is extensible. e.g. add a coerce element to entries in XMLSchemaTypes
+       if(typeName == "string") typeName = "character"
+       funName = paste("as", typeName, sep=".")
+       
        if(!exists(funName))
            funName = names(XMLSchemaTypes)[ i ]
        if(exists(funName))

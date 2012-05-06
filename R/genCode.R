@@ -587,7 +587,7 @@ defineClassDefinition =
 function(i, types, namespaceDefs, name, classes, pending, baseClass, where = globalenv(), verbose = FALSE, force = FALSE, extendList = FALSE,
           opts = new("CodeGenOpts"))
 {
-
+orig = i
 #if(name == "RequestData") browser()
   
      i@slotTypes = lapply(i@slotTypes, resolve, types, namespaceDefs)
@@ -727,8 +727,12 @@ orig = type
      if(!is.na(which) && type@name != "anyType") {
         if("useCoerce" %in% names(XMLSchemaTypes[[which]]) && XMLSchemaTypes[[which]][["useCoerce"]])
           sprintf("as(%s, '%s')", id, names(XMLSchemaTypes)[which])
-        else
-           paste("as.",  names(XMLSchemaTypes)[which], "(", id, ")", sep = "")
+        else {
+           tn = names(XMLSchemaTypes)[which]
+               #XXX Fix and generalize. See  SOAPTypes.S#56
+           if(tn == "string") tn = "character"
+           paste("as.",  tn , "(", id, ")", sep = "")
+         }
      } else
           default
   } else if(is(type, "ArrayType")) {
@@ -1336,6 +1340,10 @@ function(schema, simple = FALSE)
 defineElementClasses =
 function(types, where = globalenv(), map = createElementTypeMap(types, TRUE))  
 {
+  d = duplicated(names(map))
+  if(any(d))
+    warning("duplicate element names: ", paste(unique(names(map)[d]), collapse = ", "))
+  
   mapply(makeElementClassDef,
            names(map), map, MoreArgs = list(where = where))
 }
@@ -1346,6 +1354,11 @@ function(className, baseType, where = globalenv())
     # We are using a fake class as trying to extend the other class
     # causes problems with the prototype.
     # Reinstate this when we get a chance.
+  if(!is.null(getClassDef(className))) {
+    warning(className, " is an existing class")
+    return(NULL)
+  }
+  
   def = setClass(className, contains = "XMLSchemaFakeClass", where = where) # baseType
   fun = function(from)
              as(from, "GroundOverlayType")

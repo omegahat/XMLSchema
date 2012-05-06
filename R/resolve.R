@@ -16,18 +16,17 @@ function(..., class = "SchemaResolveError")
 
 DefaultPending = list(names = character(), types = list())
 
-setGeneric("resolve", function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
-                       obj = findSelfRefs(obj)
-                       
-#if(is(obj, 'GenericSchemaType') && obj@name == "description") browser()
+setGeneric("resolve", function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL)
+                      {
+                        if(FALSE) #XXXX Temporary turn off May 5th 2012
+                            obj = findSelfRefs(obj)
                        
                        if(is.null(xrefInfo) && is(context, "SchemaCollection"))
                           xrefInfo = context@circularDefs
-#XXXXXXXX  was = We could break everything by using this version
+#XXXXXXXX  was = We could break everything by using the  <- version as now the entire body is used and not just standardGeneric()
                        ans <- standardGeneric("resolve")
-                       if(!is.null(ans) && is(obj, "GenericSchemaType") && is(ans, "GenericSchemaType")) {
+                       if(!is.null(ans) && is(obj, "GenericSchemaType") && is(ans, "GenericSchemaType")) 
                           ans@default = optionalDefaultValue(ans, obj@default)
-                        }
                        
                        ans
                      })
@@ -35,9 +34,9 @@ setGeneric("resolve", function(obj, context, namespaces = character(), recursive
 setMethod("resolve", c("SelfRef", "SchemaCollection"),
           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
              i = match(obj@nsuri, names(context))
-             if(is.na(i)) {
-               stop("Can't find the schema with URI ", obj@nsuri)
-             }
+             if(is.na(i)) 
+                 stop("Can't find the schema with URI ", obj@nsuri)
+
              context[[i]][[obj@name]]
           })
 
@@ -113,7 +112,8 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
 setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
 
-             if(!is.null(xrefInfo) && !is.null(xrefInfo$crossRefNames) && sprintf("%s:%s", obj@nsuri, obj@name) %in%  xrefInfo$crossRefNames) {
+             if(!is.null(xrefInfo) && !is.null(xrefInfo$crossRefNames) &&
+                            sprintf("%s:%s", obj@nsuri, obj@name) %in%  xrefInfo$crossRefNames) {
 
                    tp = xrefInfo$types
                    w = sapply(tp, function(tt) {
@@ -127,12 +127,11 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
                return(obj)             
 
                  # check if the reference is to one of the built-in types in XSD and if so, resolve it directly.
-             if(obj@nsuri %in% getXSDSchemaURIs()) {
+             if(obj@nsuri %in% getXSDSchemaURIs()) 
                  return(SchemaType(obj@name, nsuri = obj@nsuri, namespaceDefs = namespaces))
-             }
 
 
-             # find which context element corresponds to the URI we have in the object.
+                 # find which context element corresponds to the URI we have in the object.
              i = match(obj@nsuri, names(context))
              
              if(is.na(i)) {
@@ -147,14 +146,14 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
              ans = resolve(ans, context, namespaces, recursive, FALSE, xrefInfo)
 
           
-               if(is.null(ans) && length(obj@name) && !is.na(obj@name) && substring(obj@name, 1, 7) == "ArrayOf") {
+             if(is.null(ans) && length(obj@name) && !is.na(obj@name) && substring(obj@name, 1, 7) == "ArrayOf") {
                   elementType = substring(obj@name, 8)
 
                   ans = new("SimpleSequenceType",
                                name = obj@name,
                                elementType = elementType,
                                elType = resolve(elementType, context, namespaces, recursive, raiseError, xrefInfo))
-                }
+              }
 
                 ans
            })
@@ -172,20 +171,21 @@ setMethod("resolve", c("UnionDefinition", "SchemaCollection"),
              obj
            })
 
-setMethod("resolve", c("ClassDefinition", "list"),
+setMethod("resolve", c("ClassDefinition", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
 
              obj@isAttribute = as.logical(sapply(obj@slotTypes, is, "AttributeDef"))
              obj@slotTypes = lapply(obj@slotTypes, resolve, context, namespaces, recursive, raiseError, xrefInfo)
 
             
-        # This can go but is an experiment  to reduce/simplify the type
+         # This can go but is an experiment  to reduce/simplify the type
                  # Attempt to reduce . See DbListType in eutils.wsdl. But the first slot has already
                  # been made into a SimpleSequenceType.
              if(length(obj@slotTypes) == 1 && is(obj@slotTypes[[1]], "LocalElement")) {
                 tp = obj@slotTypes[[1]]
                 if(length(tp@count) && max(tp@count) > 1) {
-                   def = new("SimpleSequenceType", name = obj@name, elType = tp, count = tp@count, nsuri = obj@nsuri, documentation = obj@documentation)
+                   def = new("SimpleSequenceType", name = obj@name, elType = tp, count = tp@count,
+                                 nsuri = obj@nsuri, documentation = obj@documentation)
                   return(def)
                }
              }
@@ -193,13 +193,13 @@ setMethod("resolve", c("ClassDefinition", "list"),
              obj
            })
 
-setMethod("resolve", c("WSDLTypeDescription", "list"),
+setMethod("resolve", c("WSDLTypeDescription", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
              resolve(obj$definition, context, namespaces, recursive, raiseError, xrefInfo)
            })
 
 
-setMethod("resolve", c("PrimitiveSchemaType", "list"),
+setMethod("resolve", c("PrimitiveSchemaType", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
              obj
            })

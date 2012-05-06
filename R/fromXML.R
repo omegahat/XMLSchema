@@ -12,9 +12,12 @@ function(node, map = xmlNamespace(node), name = xmlName(node))
 {
    if(!is.null(getClassDef(name)))
       return(as(node, name))
+
+   if(is.null(map))
+      return(xmlToList(node))
        
    if(is.character(map)) {
-     if(map != "" && exists(map))
+     if(length(map) && map != "" && exists(map))
        map = get(map)
      else
        map = NULL
@@ -34,6 +37,13 @@ setMethod("fromXML", c("XMLInternalElementNode", "missing", "missing", type = "c
  function(node, root = NULL, converters = SchemaPrimitiveConverters,
            append = TRUE, type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node))          
   {
+     if(type == "list")
+       return(xmlApply(node, fromXML))
+     if(type %in% c("logical", "integer", "numeric", "character")) {
+          # what about single values
+       return(as(xmlSApply(node, xmlValue), type))  # xmlValue or fromXML or as(, type)
+     }
+       
       fromXMLWithMap(node, type)
   })
 

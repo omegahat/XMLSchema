@@ -202,10 +202,10 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
   name = xmlGetAttr(type, "name", "")
 
   nsDefs = xmlNamespaceDefinitions(type, simplify = FALSE)
-  if(length(nsDefs)) {
+  if(length(nsDefs)) 
       namespaceDefs[ names(nsDefs) ] = nsDefs
-   }
-  
+
+
 # if(length(name) && !is.na(name)  && name == "alternatives") browser()
 #if(length(name)   && !is.na(name) && name == "office-of-filingType") {debug(processSequence); on.exit(undebug(processSequence))}
   
@@ -245,7 +245,8 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
   if(xmlName(type) == "element" && !is.na(xmlGetAttr(type, "type", NA)) && xmlSize(type) == 0) {
 
     #XXXX  can we just call processSchemaElement and ignore the remainder of this if() body
-    return(processSchemaElement(type, name, namespaceDefs, types, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = localElements))
+    return(processSchemaElement(type, name, namespaceDefs, types, targetNamespace = targetNamespace,
+                                 elementFormDefault = elementFormDefault, localElements = localElements))
     
        # an element that really just refers to another type definition.
     refName = discardNamespace( xmlGetAttr(type, "type") ) #XXX stripping away name space but have to be careful if there is more than one.
@@ -495,11 +496,15 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
                     # Connect this with the code for the "all" case.
                     # Need to resolve the type if it is not a primitive.
                     # XXX also want the minOccurs and maxOccurs
-
+#XXXX-XMCDA
       def = SchemaType(name, counts = getElementCount(type), obj = new("SchemaComplexType"), namespaceDefs = namespaceDefs)
       def@xmlAttrs = as(xmlAttrs(type), "character")
       def@content = processSequence(tmp, types, namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault)
-      def@attributes = lapply(xmlChildren(type)[names(type) == "attribute"], processAttribute, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE, types = types)
+               # Now process the attributes and attributes group
+      def@attributes = lapply(xmlChildren(type)[names(type) == "attribute"], processAttribute,
+                                     namespaceDefs = namespaceDefs, targetNamespace = targetNamespace,
+                                     elementFormDefault = elementFormDefault, localElements = TRUE, types = types)
+
       ags = xmlChildren(type)[names(type) == "attributeGroup"]
       doc = as(type, "XMLInternalDocument")
       for(i in ags) {
@@ -507,6 +512,8 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
           def@attributes[names(attrs)] = attrs
       }
 
+if(length(name) && !is.na(name) && name  ==  "parameters") browser()
+      def = postprocessComplexType(def)
 #XXX deal with attribute group.  
 #    Also  xs:choice for an element with the <xs:all>
 
@@ -827,8 +834,6 @@ processSequence =
 function(node, types, namespaceDefs = list(), name = getElementName(node), targetNamespace = NA, elementFormDefault = NA)
 {
 
-#if(name == "RequestData") browser()
-  
   if(xmlSize(node) == 1 && !is.na(xmlGetAttr(node[[1]], "maxOccurs", NA))) {
 
      elType = processSchemaType(node[[1]], types, namespaceDefs = namespaceDefs,
@@ -924,7 +929,8 @@ function(element, name = xmlGetAttr(element, "name"), namespaceDefs = list(), ty
 {
   defaultValue = xmlGetAttr(element, "default", NA_character_) #XXX Immediate character()  
   attrs = xmlAttrs(element)
-#if(is.na(defaultValue)) browser()
+
+#if(length(name) && !is.na(name) && name == "row") browser()
   
   if(all(c("name", "type") %in% names(attrs)))  {
            #XXX test this instead of the remainder of the if() body
@@ -933,7 +939,7 @@ function(element, name = xmlGetAttr(element, "name"), namespaceDefs = list(), ty
       ans@default = optionalDefaultValue(ans, defaultValue)
       return(ans)
 
-
+if(FALSE) {
       #??? Why should this always be a SimpleElement.
       # e.g. <element name="foo" type="xsd:string"/>
       # should map to <foo>
@@ -952,6 +958,7 @@ function(element, name = xmlGetAttr(element, "name"), namespaceDefs = list(), ty
     ans@default = optionalDefaultValue(ans, defaultValue)
       
     return(ans)
+}
   }
 
   if(!is.null(ref <- xmlGetAttr(element, "ref"))) {
@@ -960,8 +967,11 @@ function(element, name = xmlGetAttr(element, "name"), namespaceDefs = list(), ty
       return(ans)
   }
 
+  
   if(xmlSize(element) == 0) {
-    obj =  new("SchemaVoidType")  # new("SimpleElement", name = name)
+    
+     obj =  new("SchemaVoidType")  # new("SimpleElement", name = name)
+     
   } else if(names(element)[1] == "complexType" && all(names(element[[1]]) == "attribute")) {
      # e.g. ParameterField, ArrayType in PMML.
     obj = new("SimpleElement", name = xmlGetAttr(element, "name", as.character(NA)),
@@ -979,11 +989,25 @@ function(element, name = xmlGetAttr(element, "name"), namespaceDefs = list(), ty
              # should run all the children through processSchemaType.
         if(xmlSize(element) > 1)
            warning("currently skipping additional children within <element> definition for ", name)
-        
-        type = processSchemaType(element[[1]], types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace,
+
+        el = element[[1]]
+         #XXX Forcing the name here.  But it doesn't seem to be used so can back this out.
+        if(is.null(xmlGetAttr(el, "name")))
+           xmlAttrs(el) = c(name = name)
+
+        type = processSchemaType(el, types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace,
                                   elementFormDefault = elementFormDefault, localElements = TRUE)
 
-        obj = new("Element", name = name, type = type)
+        type@name = setNameIf(type@name, name)
+        type@Rname = setNameIf(type@Rname, name)
+
+        #XXX Forcing this here. Should be done in processSchemaType()
+        if(is(type, "ClassDefinition")  && any(names(type@slotTypes) == "")) {
+             names(type@slotTypes) = name # sapply(type@slotTypes, slot, "name")
+#             type@slotTypes[[1]]@name = type@slotTypes[[1]]@Rname = name
+         }
+        
+        obj = new("Element", name = name, type = type, Rname = name)
 
         i = xmlSApply(element[[1]], xmlName) == "attribute"
         if(any(i))  {
@@ -1018,6 +1042,7 @@ function(element, name = xmlGetAttr(element, "name"), namespaceDefs = list(), ty
 
    obj@default = optionalDefaultValue(obj)
 
+   obj@Rname = name
   
   obj
 }
@@ -1129,7 +1154,7 @@ processAttribute =
 function(node, name = xmlGetAttr(node, "name"), type = xmlGetAttr(node, "type", as.character(NA)),
           namespaceDefs = character(), targetNamespace = NA, elementFormDefault = NA, localElements = FALSE, types = list())
 {
-#if((!is.na(type) && type == "ID") || name == "id") browser()
+if(!is.na(name) && name == "isRecursive") browser()  
 
    if(!is.null(ref <- xmlGetAttr(node, "ref"))) {
       tmp = getNodeSet(as(node, "XMLInternalDocument"), sprintf("//xsd:schema/xsd:attribute[@name='%s']",
@@ -1152,7 +1177,7 @@ if(FALSE) {
   # Should be and now is....
        type = processSchemaType(node[[1]], types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
        if(is.na(type@name) || type@name == "")
-          type@name = sprintf("%s.Enum", name)
+          type@name = type@Rname = sprintf("%s.Enum", name)
  }
      } else
         warning("<fixme> Skipping children in <attribute> definition")
@@ -1165,7 +1190,7 @@ if(FALSE) {
       else
          type = new("SchemaStringType")  # should this be a simple string or a SchemaAnyType. 
     }
-   
+
    new("AttributeDef", name = name,
                        type = type,
                        use = xmlGetAttr(node, "use", "optional"),
@@ -1341,3 +1366,35 @@ function(type, name, types, namespaceDefs, targetNamespace = NA, elementFormDefa
 }
 
 
+
+
+postprocessComplexType =
+function(def)
+{
+  if(!( is(def@content, "ClassDefinition") || is(def@content, "SimpleSequenceType")))
+    return(def)
+
+  if(is(def@content, "ClassDefinition"))  {
+    ans = def@content
+  } else if(is(def@content, "SimpleSequenceType"))
+    ans = new("ClassDefinition", slotTypes = list(def@content))
+    
+   ans@documentation = def@documentation
+   ans@name = def@name
+   ans@Rname = def@Rname
+
+   nslot = length(ans@slotTypes)
+   ans@isAttribute = c(rep(FALSE, nslot), rep(TRUE, length(def@attributes)))
+   ans@slotTypes = c(ans@slotTypes, def@attributes)
+   ans
+}
+
+
+setNameIf =
+function(name, other)
+{
+  if(length(name) == 0 || is.na(name) || name == "")
+     other
+  else
+     name
+}
