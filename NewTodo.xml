@@ -10,6 +10,38 @@
   You have to join the "- -" into -\-. They are here in a comment  -->
 
 <item status="done">
+UnionDefinition doesn't seem to get the dependent classes defined.
+<br/>
+For SchemaVoidType, define a class that extends
+<r:code>
+library(XMLSchema); sh = readSchema("inst/samples/shirts.xsd")
+defineClasses(sh, verbose = TRUE)
+nn = newXMLNode("shirt")
+as(nn, "shirt")
+</r:code>
+</item>
+
+<item status="check">
+Infinite recursion when resolving a type with same name as an element.
+Can find the element first.  e.g. items in shirts.xsd
+<r:code>
+library(XMLSchema); sh = readSchema("inst/samples/shirts.xsd")
+XMLSchema:::defClass(sh[[1]]$items, types = sh)
+</r:code>
+<br/>
+Added a type argument which can be a function and is used as
+a predicate to find which elements in a schema we want to consider.
+</item>
+
+
+<item status="high">
+readSchema fails for ogckml22.xsd
+</item>
+<item status="done">
+source("check.R") broken again.
+ogckml22.xsd causing problems.
+</item>
+<item status="done">
 MODIS example for SSOAP not putting product name in the body of the request
 for def@functions$getbands("MCD12Q1").
 See modis.R
@@ -59,9 +91,7 @@ Add method for <r:expr>as(node, "list")</r:expr> and implement it as
 Implement this for <r:func>fromXML</r:func> also.
 </item>
 
-<item>
-readSchema fails for ogckml22.xsd
-</item>
+
 
 <item>
 <b>Is this working now?</b>
@@ -69,7 +99,7 @@ createSOAPConverter() failing for SimpleSequenceType in pmml
 because no name for slot (and NA for type).  Class "row" again!
 </item>
 
-<item>
+<item status="high">
 defineClasses(pmml) fails because ListOfANY is not found.
 Part of "TableLocatorOrInlineTable", then Extension.row, then "row".
 The last of these has a repn with ListOfANY. 
@@ -124,7 +154,7 @@ The problem is that there is no type attribute.
 The type is given as a child of the <xml:tag>attribute</xml:tag>.
 </item>
 
-<item>
+<item status="high">
 In processing egquery.xsd, eGQueryResultType doesn't recognize
 the maxOccurs for the slot named ResultItem (with @type ResultItemType) and so just has one rather than a list
 of them.
@@ -212,7 +242,9 @@ return the AttributeDef but with the type resolved.
 We may need to back these out, but defineClasses() seems to complete.
 </item>
 
-<item>
+<item status="check">
+<b>The following doesn't appear to happen anymore now. See check.R</b>
+<br/>
 How do we end up wth SchemaComplexType at the top-level of the schema?
 We only see them in the XMCDA schema in all our sample schema (see check.R).
 It looks like these should turn into ClassDefinition.

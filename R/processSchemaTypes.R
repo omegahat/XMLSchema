@@ -512,7 +512,7 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
           def@attributes[names(attrs)] = attrs
       }
 
-if(length(name) && !is.na(name) && name  ==  "parameters") browser()
+#if(length(name) && !is.na(name) && name  ==  "parameters") browser()
       def = postprocessComplexType(def)
 #XXX deal with attribute group.  
 #    Also  xs:choice for an element with the <xs:all>
@@ -1154,7 +1154,7 @@ processAttribute =
 function(node, name = xmlGetAttr(node, "name"), type = xmlGetAttr(node, "type", as.character(NA)),
           namespaceDefs = character(), targetNamespace = NA, elementFormDefault = NA, localElements = FALSE, types = list())
 {
-if(!is.na(name) && name == "isRecursive") browser()  
+#if(!is.na(name) && name == "isRecursive") browser()  
 
    if(!is.null(ref <- xmlGetAttr(node, "ref"))) {
       tmp = getNodeSet(as(node, "XMLInternalDocument"), sprintf("//xsd:schema/xsd:attribute[@name='%s']",

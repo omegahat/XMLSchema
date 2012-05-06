@@ -182,7 +182,7 @@ function(i, where = globalenv(),
       return(FALSE)
 
     if(is(i, "SchemaTypeReference"))
-       i = resolve(i, types, namespaceDefs, recursive = TRUE, xrefInfo = types@circularDefs)    
+       i = resolve(i, types, namespaceDefs, recursive = TRUE, xrefInfo = types@circularDefs, type = notElementFun)    
     
     if(is(i, "SchemaTypes"))
      return(standardGeneric("defClass"))
@@ -472,8 +472,28 @@ tmp = function(i, where = globalenv(),
                  return(FALSE)
              }
 setMethod("defClass", "NULL", tmp)
-setMethod("defClass", "SchemaVoidType", tmp)
+#setMethod("defClass", "SchemaVoidType", tmp)
 
+setMethod("defClass", "SchemaVoidType",
+
+       function(i, where = globalenv(),
+                namespaceDefs = list(),
+                verbose = FALSE,
+                pending = new.env(hash = TRUE, emptyenv()),
+                classes = new.env(hash = TRUE, emptyenv()),
+                types = NULL,
+                baseClass = BaseClassName, force = FALSE,
+                name = getName(i),
+                ignorePending = FALSE, opts = new("CodeGenOpts")) {
+
+          def = setClass(name, contains = "NULL", where = where)
+            # move this createConverters and define as method for createSOAPConverter()
+          fun = function(from) new(name)
+           body(fun)[[2]] = name
+          
+          setAs("XMLAbstractNode", name, fun, where = where)
+          def
+       })
 
 
 setMethod("defClass", "AttributeDef",
