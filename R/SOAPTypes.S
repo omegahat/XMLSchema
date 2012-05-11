@@ -191,7 +191,6 @@ UnionDef =
 function(name, slotTypes, uris = as.character(rep(NA, length(slotTypes))), obj = new("UnionDefinition"),
          targetNamespace = NA, elementFormDefault = NA)
 {
- if(is.na(name)) browser()
    ClassDef(name, slotTypes, uris, obj = obj, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault)
 }
 

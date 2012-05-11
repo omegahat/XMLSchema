@@ -42,8 +42,8 @@ setClass("ListOfANY", contains = "list")
 # Corresponds to anySimpleType in XSD.
 
 setClass("CodeGenOpts", representation(makePrototype = "logical", defineEnumVars = "logical",
-                                       allowMissingNodes = "logical"),
-           prototype = prototype(makePrototype = TRUE, defineEnumVars = FALSE, allowMissingNodes = FALSE))
+                                       allowMissingNodes = "logical", verbose = "logical"),
+           prototype = prototype(makePrototype = TRUE, defineEnumVars = FALSE, allowMissingNodes = FALSE, verbose = FALSE))
 
 setClass("Base64Encoded", contains = "character")
 setAs("Base64Encoded", "raw",

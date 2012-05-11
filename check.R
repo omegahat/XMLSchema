@@ -1,6 +1,6 @@
 library(XMLSchema)
-ff = list.files("~/GitWorkingArea/XMLSchema/inst/samples/", pattern = "\\.xsd$", full = TRUE)
-ff = grep("ogckml22", ff, invert = TRUE, value = TRUE)
+ff = list.files("~/GitWorkingArea/XMLSchema/inst/samples", pattern = "\\.xsd$", full = TRUE)
+ff = grep("(ogckml22|xAL.xsd)", ff, invert = TRUE, value = TRUE)
 
 schema = lapply(ff, readSchema)
 

@@ -38,7 +38,7 @@ defineClasses =
   #
   # namespaceDefs is used in mapSchemaTypeToS as the third argument.
   #
-function(types,  where = globalenv(), namespaceDefs = list(), verbose = FALSE,
+function(types,  where = globalenv(), namespaceDefs = list(), verbose = opts@verbose,
           baseClass = BaseClassName, force = FALSE, opts = new("CodeGenOpts"),
           pending = new.env(hash = TRUE, emptyenv()), classes = new.env(hash = TRUE, emptyenv()),
           defineElementTypeMap = TRUE, defineElementClasses = TRUE)
@@ -174,7 +174,6 @@ function(i, where = globalenv(),
       return(getSchemaClass(i, types))
     
   }
-    
     
 #    if(name %in% c("eComp", "ECompression")) {cat("Hey", name, "\n"); browser()}
     while(is(i, "Element"))
@@ -359,9 +358,9 @@ if(showDefClassTrace)
            def = setClass(name, "integer", where = where)
              # coercion method.
            fun = function(from)
-                     asIntegerSetValue(from, 'a', 'b')
-           body(fun)[[3]] = i@values
-           body(fun)[[4]] = name
+                     XMLSchema::asIntegerSetValue(from, 'a', 'b')
+           body(fun)[[3]] = i@values # a
+           body(fun)[[4]] = name    # b
            environment(fun) = globalenv()
            setAs("numeric", name, fun, where = where)
            setAs("character", name, fun, where = where)           

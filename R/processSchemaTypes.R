@@ -324,8 +324,9 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
       tp = strsplit(tp, "[[:space:]]+")[[1]]
       els = lapply(tp, SchemaType, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace)
     
-      types = lapply(xmlChildren(u), processSchemaType, types = types, localElements = TRUE, targetNamespace = targetNamespace, namespaceDefs = namespaceDefs, localElements = TRUE)
-  if(is.na(name)) browser()
+      types = lapply(xmlChildren(u), processSchemaType, types = types, localElements = TRUE,
+                       targetNamespace = targetNamespace, namespaceDefs = namespaceDefs, localElements = TRUE)
+
       def = new("UnionDefinition", name = name, slotTypes = c(types, els))
    } else
        def <- "xsd:string"
