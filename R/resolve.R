@@ -109,7 +109,10 @@ if(FALSE) {
 setMethod("resolve", c("SchemaTypeReference", "list"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, ...) {
              
-             resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, ...)
+             ans = resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, ...)
+#!!! May 10, 6:13             
+             ans@count = obj@count
+             ans
            })
 
 
@@ -523,9 +526,12 @@ setMethod("resolve", c("Element", "list"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
 
 #XXX temporary test
+orig = obj  
     obj@type = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type = notElementFun, depth = depth + 1L, work = work, ...)
     if(is(obj@type, "Element")) {
       obj@type@default = optionalDefaultValue(obj@type, obj@default)
+      if(length(obj@count))
+          obj@type@count = obj@count
       return(obj@type)
     }
     return(obj)

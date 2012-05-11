@@ -56,7 +56,7 @@ function(types,  where = globalenv(), namespaceDefs = list(), verbose = FALSE,
    if(defineElementClasses) {
       setClass("XMLSchemaFakeClass", where = where)
       defineElementClasses (map = map, where = where)
-    }
+   }
 
   
   if(is.character(defineElementTypeMap)
@@ -68,7 +68,7 @@ function(types,  where = globalenv(), namespaceDefs = list(), verbose = FALSE,
                 names(types)[1]
       
       assign(id, map, where)
-    }
+   }
   
   ls(classes)
 }
@@ -164,9 +164,9 @@ function(i, where = globalenv(),
     if(is.null(i))
       return(FALSE)
 
-    if(is(i, "AttributeDef")) {
+    if(is(i, "AttributeDef")) 
       i = i@type
-    }
+
 
   if(!is(i, "RestrictedStringType") && length(i@nsuri) &&
           !is.na(i@nsuri) && i@nsuri %in% "http://www.w3.org/2001/XMLSchema") {
@@ -232,7 +232,7 @@ function(i, where = globalenv(),
             cat("defining setAs() for", type@name, "\n")
 
         if(length(formals(type@fromConverter)) == 0)
-           type@fromConverter = createSOAPConverter(type)
+           type@fromConverter = createFromXMLConverter(type, allowMissingNode = opts@allowMissingNodes)
 
         if(length(formals(type@fromConverter)) > 0)  {
            if(is(type@fromConverter, "SchemaElementConverter"))
@@ -489,7 +489,7 @@ setMethod("defClass", "SchemaVoidType",
                 ignorePending = FALSE, opts = new("CodeGenOpts")) {
 
           def = setClass(name, contains = "NULL", where = where)
-            # move this createConverters and define as method for createSOAPConverter()
+            # move this createConverters and define as method for createFromXMLConverter()
           fun = function(from) new(name)
            body(fun)[[2]] = name
           
@@ -964,7 +964,7 @@ function(type, types, name = NA, where = globalenv(), parentClass = BaseClassNam
 
   
 #XXX
-#  createSOAPConverter(, types = types)
+#  createFromXMLConverter(, types = types)
    fun = function(from)
             xmlSApply(from, as, "x")
    if(builtinClass == "list")

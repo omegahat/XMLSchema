@@ -48,9 +48,9 @@ setClass("XMLChoiceConverter", contains = "XMLTypeConverter")
 #
 #  Convert from SOAP to R.
 #
-setGeneric("createSOAPConverter",
-            function(type, namespaces, defs = NULL, types = list(), ...) {
-               standardGeneric("createSOAPConverter")
+setGeneric("createFromXMLConverter",
+            function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
+               standardGeneric("createFromXMLConverter")
             })
 
 classTemplate =
@@ -60,9 +60,9 @@ function(from)
 
 }
 
-setMethod("createSOAPConverter",
+setMethod("createFromXMLConverter",
            "RestrictedStringDefinition",
-            function(type, namespaces, defs = NULL, types = list(), ...) {
+            function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
               function(node, ...) {
                  xmlValue(node)
               }
@@ -77,7 +77,9 @@ prim.tmpl = expression(obj@slotId <- as(xmlValue(from[[""]]), "?"))[[1]]
 attr.tmp = quote(obj@slotId <- as(xmlGetAttr(from, "attrName"), type))
 
 
-setGeneric("genSlotFromConverterCode", function(elType, id)  standardGeneric("genSlotFromConverterCode"))
+setGeneric("genSlotFromConverterCode",
+             function(elType, id, allowMissingNodes = FALSE, ...)
+                  standardGeneric("genSlotFromConverterCode"))
 
             # Want to deal with optional  elements, e.g. minOccurs = "0"
             # and put tmpl in an if(!is.null(from[[id]]) )
@@ -85,8 +87,10 @@ setGeneric("genSlotFromConverterCode", function(elType, id)  standardGeneric("ge
     # Note that if we know the elements have to come in a particular order
     # we can index them by number.
 setMethod("genSlotFromConverterCode", "ANY",
-   function(elType, id)
+   function(elType, id, allowMissingNodes = FALSE, ...)
    {
+if(id == "LookAt") browser()
+
       orig = elType
       isElement = is(elType, "Element")
       if(isElement) {
@@ -101,8 +105,8 @@ setMethod("genSlotFromConverterCode", "ANY",
          elName = elType@name
       }
       
-      optional = ((is(elType, "SchemaType") || is(elType, "LocalElement")) && length(elType@count) && (0 %in% elType@count))
-      if(!optional && isElement && is(orig, "LocalElement"))
+      optional = allowMissingNodes || ((is(elType, "SchemaType") || is(elType, "Element")) && length(elType@count) && (0 %in% elType@count))
+      if(!optional && isElement && is(orig, "Element"))
           optional = length(orig@count) && (0 %in% orig@count)
 
       if(is(elType, "PrimitiveSchemaType")) {
@@ -122,7 +126,6 @@ setMethod("genSlotFromConverterCode", "ANY",
              prim.tmpl[[3]][[2]][[2]] = as.name("tmp")
           }
       } else {
-#if(id == "LatLonBox") browser()        
           tmpl = gen.tmpl               
           tmpl[[3]][[3]] = getRTypeFromSOAP(elType, "type")
           tmpl[[3]][[2]] = substitute(from[[name]], list(name = elName))
@@ -166,7 +169,7 @@ setMethod("genSlotFromConverterCode", "ANY",
 # Check all
 
 setMethod("genSlotFromConverterCode", "AttributeDef",
-   function(elType, id) {
+   function(elType, id, allowMissingNodes = FALSE) {
      
         attr.tmp[[2]][[3]] = as.symbol(id)
         attr.tmp[[3]][[2]][[3]] = id
@@ -184,9 +187,9 @@ setMethod("genSlotFromConverterCode", "AttributeDef",
    })
 
 
-setMethod("createSOAPConverter",
+setMethod("createFromXMLConverter",
            "ExtendedClassDefinition",
-            function(type, namespaces, defs = NULL, types = list(), ...) {
+            function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
                    # use the inherited method for ClassDefinition and then
                    # change the first expression which creates the new object
                    # by first coercing the input object to the base
@@ -218,15 +221,15 @@ function(from)
      character()
 }
 
-setMethod("createSOAPConverter",
+setMethod("createFromXMLConverter",
            "ClassDefinition",
-            function(type, namespaces, defs = NULL, types = list(), ...) {
+            function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
 
                f = classTemplate
                bd = body(f)
                bd[[2]][[3]][[2]] = type@name
                slotIds = names(type@slotTypes)
-               b = mapply(genSlotFromConverterCode, type@slotTypes, slotIds)
+               b = mapply(genSlotFromConverterCode, type@slotTypes, slotIds, MoreArgs = list(allowMissingNodes = allowMissingNodes, ...))
 
                bd[seq(3, length = length(slotIds))] = b
                    # Add the expression that returns the object.
@@ -244,14 +247,14 @@ function(from)
 }
 
 # The following is a No-Op.
-setMethod("createSOAPConverter", "SchemaGroupType",
-                      function(type, namespaces, defs = NULL, types = list(), ...) {
+setMethod("createFromXMLConverter", "SchemaGroupType",
+                      function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
                             function(x, ...) {x}
                       })
 
-setMethod("createSOAPConverter", "ANY",
-                      function(type, namespaces, defs = NULL, types = list(), ...) {
-                         warning("No method for createSOAPConverter for type ", class(type), " ", type@name)
+setMethod("createFromXMLConverter", "ANY",
+                      function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
+                         warning("No method for createFromXMLConverter for type ", class(type), " ", type@name)
                         function(x, ...) {x}
                       })
 
@@ -268,14 +271,14 @@ setMethod("createSOAPConverter", "ANY",
 #
 
 #if(FALSE)
-#setMethod("createSOAPConverter", "SimpleElement",
+#setMethod("createFromXMLConverter", "SimpleElement",
 #                      function(type, namespaces, defs = NULL) {
 #
 #                      })
 
 
-setMethod("createSOAPConverter", "UnionDefinition",
-                      function(type, namespaces, defs = NULL, types = list(), ...) {
+setMethod("createFromXMLConverter", "UnionDefinition",
+                      function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
                         # Want to generate a function that
                         # determines what the name of the node is and
                         # uses that as the target class.
@@ -298,9 +301,9 @@ setMethod("createSOAPConverter", "UnionDefinition",
 # Recognize the primitive types.
 
 # See createArrayClass in genCode.R  Compute builtinClass and elName there.
-setMethod("createSOAPConverter",
+setMethod("createFromXMLConverter",
            "SimpleSequenceType",
-            function(type, namespaces, defs = NULL, types = list(), ...) {
+            function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
                  fun = function(from)
                    xmlSApply(from, as, "x")
                #  if(builtinClass == "list")
@@ -310,16 +313,16 @@ setMethod("createSOAPConverter",
   fun
 })
 
-setMethod("createSOAPConverter",
+setMethod("createFromXMLConverter",
            "SchemaGroupType",
-            function(type, namespaces, defs = NULL, types = list(), ...) {
-              warning("no method for createSOAPConverter for SchemaGroupType named ", type@name)
+            function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
+#              warning("no method for createFromXMLConverter for SchemaGroupType named ", type@name)
               function() NULL
             })
 
-setMethod("createSOAPConverter",
+setMethod("createFromXMLConverter",
            "ArrayType",
-            function(type, namespaces, defs = NULL, types = list(), ...) {
+            function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
                f = arrayTemplate
                b = body(f)
 
@@ -331,9 +334,9 @@ setMethod("createSOAPConverter",
             })
 
 
-setMethod("createSOAPConverter",
+setMethod("createFromXMLConverter",
           "Element",
-          function(type, namespaces, defs = NULL, types = list(), ...) {
+          function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
               schemaTypes = types
 
               # What about anonymous/unnamed elements/types.  We need to know the
@@ -388,9 +391,9 @@ setMethod("createSOAPConverter",
 
 
 
-setMethod("createSOAPConverter",
+setMethod("createFromXMLConverter",
            "RestrictedListType",
-            function(type, namespaces, defs = NULL, types = list(), ...) {
+            function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
 
               txt = c("function(x, ...) {",
                       "vals = strsplit(xmlValue(x), '[[:space:]]+')",
@@ -411,15 +414,15 @@ setAs("character", "XMLTypeConverter",
   })
 
 
-setMethod("createSOAPConverter",
+setMethod("createFromXMLConverter",
            "SimpleSequenceType",
-            function(type, namespaces, defs = NULL, types = list(), ...) {
+            function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
               type@fromConverter
             })
 
 
-setMethod("createSOAPConverter", "SchemaComplexType",
-     function(type, namespaces, defs = NULL, types = list(), ...) {
+setMethod("createFromXMLConverter", "SchemaComplexType",
+     function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
 
    ids = names(type@attributes)
    if(length(ids) == 0 || any(ids == ""))
@@ -447,20 +450,20 @@ function(attrName, def, types = list(), target = "obj", src = "x")
 }
 
 
-setMethod("createSOAPConverter",
+setMethod("createFromXMLConverter",
            "SchemaCollection",
-     function(type, namespaces, defs = NULL, types = list(), ...) {
+     function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
         types = unlist(type, recursive = FALSE)
         names = unlist(lapply(type, names))
         invisible(
-           structure(lapply(types, createSOAPConverter, namespaces, defs, type),
+           structure(lapply(types, createFromXMLConverter, namespaces, defs, type, allowMissingNodes, ...),
                    names = names))
      })
 
 
-setMethod("createSOAPConverter",
+setMethod("createFromXMLConverter",
            "SimpleElement",
-     function(type, namespaces, defs = NULL, types = list(), ...) {
+     function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
        
        f = function(node, obj = new(type)) {
 

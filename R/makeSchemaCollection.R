@@ -121,7 +121,7 @@ function(node, namespaceDefs = gatherNamespaceDefs(node), createConverters = FAL
                          next
                       
                       if(FALSE && createConverters && is(o, "BasicSchemaType"))
-                         o@fromConverter = createSOAPConverter(o, ans)
+                         o@fromConverter = createFromXMLConverter(o, ans)
 
                       ans[[i]] <- o
                       names[i] <- n # o@name By using n and not o@name, we avoid the case where we are

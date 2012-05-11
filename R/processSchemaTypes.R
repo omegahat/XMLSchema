@@ -83,7 +83,7 @@ function(node, doc, namespaceDefs = gatherNamespaceDefs(node), createConverters 
                          next
                       
                       if(FALSE && createConverters && is(o, "BasicSchemaType"))
-                         o@fromConverter = createSOAPConverter(o, ans)
+                         o@fromConverter = createFromXMLConverter(o, ans)
 
                       ans[[i]] <- o
                       names[i] <- n # o@name By using n and not o@name, we avoid the case where we are
@@ -140,7 +140,7 @@ setMethod("addConverters",
 setMethod("addConverters",
            "list",
            function(x, types = x, ...) {
-             lapply(x, createSOAPConverter, types = types)
+             lapply(x, createFromXMLConverter, types = types)
            })
 
 setMethod("addConverters",
@@ -957,9 +957,12 @@ function(element, name = xmlGetAttr(element, "name"), namespaceDefs = list(), ty
                    targetNamespace = NA, elementFormDefault = NA, localElements = FALSE)
 {
 #if(length(name) && !is.na(name) && name  == "altitude") browser()
+#if(length(name) && name == "LookAt") browser()
 
   defaultValue = xmlGetAttr(element, "default", NA_character_) #XXX Immediate character()  
   attrs = xmlAttrs(element)
+
+  count = getElementCount(element)
 
 #if(length(name) && !is.na(name) && name == "row") browser()
   
@@ -968,6 +971,7 @@ function(element, name = xmlGetAttr(element, "name"), namespaceDefs = list(), ty
            #XXX need to process additional attributes such as nillable="true"
       ans = getElementRef(xmlGetAttr(element, "type"), element, types, namespaceDefs, targetNamespace, localElements)
       ans@default = optionalDefaultValue(ans, defaultValue)
+      ans@count = count
       return(ans)
 
 if(FALSE) {
@@ -983,18 +987,19 @@ if(FALSE) {
     } else {
       uri = getTargetNamespace(element)
       ty = els
-   }
+    }
 
     ans = new("SimpleElement", name = attrs["name"], type = ty, nsuri = uri)
     ans@default = optionalDefaultValue(ans, defaultValue)
       
     return(ans)
-}
-  }
+ } # FALSE
+    }
 
   if(!is.null(ref <- xmlGetAttr(element, "ref"))) {
       ans = getElementRef(ref, element, types, namespaceDefs, targetNamespace, localElements)
       ans@default = optionalDefaultValue(ans, defaultValue)
+      ans@count = count
       return(ans)
   }
 
@@ -1074,6 +1079,7 @@ if(FALSE) {
    obj@default = optionalDefaultValue(obj)
 
    obj@Rname = name
+   obj@count = count
   
   obj
 }

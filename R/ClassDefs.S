@@ -41,8 +41,9 @@ setClass("ListOfANY", contains = "list")
 
 # Corresponds to anySimpleType in XSD.
 
-setClass("CodeGenOpts", representation(makePrototype = "logical", defineEnumVars = "logical"),
-           prototype = prototype(makePrototype = TRUE, defineEnumVars = FALSE))
+setClass("CodeGenOpts", representation(makePrototype = "logical", defineEnumVars = "logical",
+                                       allowMissingNodes = "logical"),
+           prototype = prototype(makePrototype = TRUE, defineEnumVars = FALSE, allowMissingNodes = FALSE))
 
 setClass("Base64Encoded", contains = "character")
 setAs("Base64Encoded", "raw",
@@ -153,7 +154,7 @@ setClassUnion("SchemaTypeOrNULL", c("SchemaType", "NULL"))
      # xmlAttrs here are for the attributes on the XML node that we don't know how to process in place so hold on to.
      #  e.g. nillable = "true" on anyType in DailValues.asmx?wsdl
 setClass("SchemaElement", representation(name = "character",
-                                         attributes = "list",
+                                         attributes = "list", count = "numeric",
                                          xmlAttrs = "character"), contains = "GenericSchemaType") # was BasicSchemaType - added Sep 18 as an experiment.
                                                                                                        # GenericSchemaType added 28 Oct.
 setClass("SimpleElement", representation(type = "character", nsuri = "character"), contains = "SchemaElement")
@@ -162,7 +163,7 @@ setClassUnion("SchemaTypeOrNULLOrElement", c("SchemaTypeOrNULL", "SchemaElement"
 setClass("Element", representation(type = "SchemaTypeOrNULLOrElement"),
                      contains = "SchemaElement")
 
-setClass("LocalElement", representation(count = "numeric"), contains = "Element")
+setClass("LocalElement", contains = "Element") # representation(count = "numeric"),
 
 
 #setClass("EnumValuesDef",  contains = "character")
