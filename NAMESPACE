@@ -52,8 +52,8 @@ export(convertToSName)
 export(simple.dQuote)
 
 
-export(createSOAPConverter)
-exportMethods(createSOAPConverter)
+export(createFromXMLConverter)
+exportMethods(createFromXMLConverter)
 
 
 exportClass(string)
@@ -74,6 +74,13 @@ exportMethods(expandS4)
 export(exportClassDefs, exportClassDef)
 
 
-exportClass(ListOfANY)
+exportClass(ListOfANY, ListOfAnySimpleType)
 #export(as.string)
+
+
+export(show)
+
+export(asIntegerSetValue)
+
+exportClass("URI")
 

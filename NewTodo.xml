@@ -4,10 +4,153 @@
 	 xmlns:xml="http://www.w3.org/XML/1998/namespace">
 <topic>
 <title>General</title>
+
+<item>
+Define method for converting to URI
+Test is styleUrl in kml21
+</item>
+
+<item>
+By changing optionalDefaultValue(), we now break defClass for NetworkLinkType.
+<br/>
+Added coerceValue call to handle logicals.
+<br/>
+Prototypes for NetworkLinkType break the setClass.
+This works
+      def = setClass(name, representation = repn, where = where, contains = baseClass, prototype = prototype(list(), refreshVisibility = FALSE, flyToView = FALSE))
+but computing the protoype with (version in b9047f8 of genCode.R) does not. 
+How can we tell when we need to add this.
+</item>
+
+<item status="check">
+Converter for kml21 and GroundOverlayType doesn't get the default value correct.
+e.g. altitudeMode.  The default doesn't seem to be set for either the LocalElement or the RestrictedStringDefinition.
+<r:code>
+kml = readSchema("inst/samples/kml21.xsd")
+defineClasses(kml)
+</r:code>
+</item>
+<item>
+<b> Need to put in the element accessor in the code</b>
+Converter creation for KML 2.1 is  broken. 
+Not getting the elements within the top node.
+Need to decide who is doing what at what level.
+<br/>
+If we have an Element, we don't have the count to determine if it is optional.
+<br/>
+We are getting a SchemaTypeReference in genSlotFromConverterCode.
+When processing the ClassDefinition StyleMapPairType.
+<br/>
+[Fixed - for now] Counts are getting messed up, e.g. GroundOverlay has no count info for altitudeMode,
+or any of its slots.
+They are in the slot types however.
+</item>
+<item>
+defineClasses(pmml) now goes into infinite recursion.
+Maybe it got further than before?
+<br/>
+There is a circular reference for Node. It is an element
+that contains a complex type and one of its elements has a reference to Node.
+</item>
+<item status="high">
+sch = readSchema("inst/samples/pmml-4-1.xsd")
+doesn't even work now. Fails in TimeValue.
+processSchematype line 505.
+Trying to put an Element into the content slot of a SchemaComplexType.
+Did the class of def change, or did we use to not return an Element
+from processSequence. If processSchemaType returned a SimpleSequenceType
+for the <xml:tag>sequence</xml:tag>  we are processing, all would be well.
+We could also open the content  slot to be an Element.
+In the older versions, the SchemaComplexType was a ClassDefinition.
+The slotTypes[[1]] object was the Element.
+In the old version, we use the condition xmlName(type) == "element" in processSchemaType  (now line 462).
+Same condition in new version.
+<br/>
+Is this because we put the name attribute on the node!  We do seem to do this in the new version.
+Seems to work with that commented out (line 1014).
+</item>
+
+<item>
+Need to have XMLSchema package in search path for weather due to need for asIntegerSetValue.
+Shall we explicitly reference it via XMLSchema:::asIntegerSetValue in the code we generate
+or leave the environment of the function be the XMLSchema.
+</item>
 <items>
 <!-- Invoke with 
        "open -a /Applications/Google\ Chrome.app Todo.xml - -args - -allow-file-access-from-files" 
   You have to join the "- -" into -\-. They are here in a comment  -->
+
+<item status="done">
+The weather.R example for SOAP fails now. The call to LatLonListCityNames fails to put the
+value of the argument (2) into the <xml:tag>displayLevel</xml:tag> node.
+</item>
+
+<item>
+NA for slot name in ClassDefinition when the slot is a UnionDefinition.
+Is it all from processSequence?
+</item>
+<item>
+For ogckml22.xsd, we have infinite recursion for AbstractFeatureType.
+If we comment out the  element referencing xal:AddressDetails, then we avoid the infinite recursion.
+Note that AddressDetails in xAL.xsd is both an element and a type.
+Resolving this with
+<r:code>
+resolve(sch[[1]]$AbstractFeatureType@slotTypes$AddressDetails@type, sch, recursive = FALSE, type = XMLSchema:::notElementFun)
+</r:code>
+shows that we have an NA in the name "PostalServiceElements.NA.any"
+<r:code>
+i = which(names(sch[[3]]) == "AddressDetails")
+sch[[3]][[4]] # the class, not the element
+</r:code>
+The following causes the infinite recursion:
+<r:code>
+trace(resolve, quote({print(c(class(obj))); browser()}))
+resolve(sch[[1]]$AbstractFeatureType@slotTypes$AddressDetails@type, sch, recursive = TRUE)
+</r:code>
+It is the first slot that causes the problems
+<r:code eval="false">
+a = resolve(sch[[3]][[4]]@slotTypes[[1]], sch)
+</r:code>
+<r:code>
+it = sch[[3]][[4]]@slotTypes[[1]]
+</r:code>
+This is a ClassDefinition - "PostalServiceElements.NA.any"
+<b>Done We should fix the name! See #UnionDefinition. </b>
+Fails on the 2nd slot - resolve(it@slotTypes[[2]],  sch)
+but the first an third slot are fine.
+<r:code>
+it = sch[[3]][[4]]@slotTypes[[1]]
+it = it@slotTypes[[2]]
+</r:code>
+This is a UnionDefinition.
+We can resolve the slots 1, 2
+Fails on 3, 4, 5, 6 - Country, AdministrativeArea, Locality, Thoroughfare.
+<r:code>
+sapply(it@slotTypes, class)
+<r:output><![CDATA[
+           Address       AddressLines            Country 
+         "Element"     "LocalElement"          "Element" 
+AdministrativeArea           Locality       Thoroughfare 
+         "Element"          "Element"          "Element" 
+]]></r:output>
+</r:code>
+There are actually cross references. Are there? 
+
+xx = XMLSchema:::findSelfRefs(it@slotTypes[[3]])
+Reinstate this in resolve() generic, but make certain that we fix this
+so that it returns an element and not the SchemaTypeReference that it refers
+to. What example was this failing on before?
+
+<br/>
+
+<br/>
+Note that this has a "" in the first name of the slotTypes.
+The rest are all "attribute", except the last is a "Code".
+[Fixed] These should have proper names. 
+Note that we are missing the attributes from the grPostal  group.
+Also, where is the "Code" attribute coming from? That is the grPostal.
+Why is it at the end of this collection of attributes?
+</item>
 
 <item status="done">
 UnionDefinition doesn't seem to get the dependent classes defined.
@@ -34,9 +177,37 @@ a predicate to find which elements in a schema we want to consider.
 </item>
 
 
-<item status="high">
+<item status="check">
 readSchema fails for ogckml22.xsd
+<br/>
+Also, Failed to handle AddressIdentifier - complexType &amp; attribute, mixed = "true". Problem is anyAttribute element, probably.
+But the error is in processSchemaElement and setNameIf for AddressIdentifier.
+<br/>
+[Fixed] Several warnings about skipping children attribute definition.
+These were just annotation nodes, so don't issue the warning in these circumstances.
 </item>
+<item status="done">
+readSchema fails for ogckml22.xsd
+<br/>
+Introduced an AttributeGroup class.  We need to be able to store this if it is defined
+in one schema and referenced in another. For example, grPostal is defined in xAL.xsd
+and referenced in ogckml22.xsd.  (We could replace the import/include directive with the contents.)
+<br/>
+Works now. (17:43). Now try defineClasses()
+</item>
+
+<item status="high">
+defineClasses() fails for ogckml22.xsd.
+Fails for AbstractObjectType.
+<r:error><![CDATA[
+  No definition was found for superclass “ListOfanySimpleType” in the specification of class “AbstractObjectType”
+]]></r:error>
+This is the type of the first "slot", but it has no name. We could use this as
+the base class, or define a slot for it.
+This has two attribute slots as well. 
+
+</item>
+
 <item status="done">
 source("check.R") broken again.
 ogckml22.xsd causing problems.

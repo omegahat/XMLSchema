@@ -311,7 +311,7 @@
           <element ref="atom:author" minOccurs="0"/>
           <element ref="atom:link" minOccurs="0"/>
           <element ref="kml:address" minOccurs="0"/>
-          <element ref="xal:AddressDetails" minOccurs="0"/>
+          <element ref="xal:AddressDetails" minOccurs="0"/> 
           <element ref="kml:phoneNumber" minOccurs="0"/>
           <choice>
             <annotation>
