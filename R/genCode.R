@@ -1,3 +1,5 @@
+PrimitiveRClassNames = c("character", "numeric", "integer", "logical")
+
 verbose = FALSE
 
 
@@ -181,7 +183,7 @@ function(i, where = globalenv(),
     if(is.null(i))
       return(FALSE)
 
-    if(is(i, "SchemaTypeReference"))
+#    if(is(i, "SchemaTypeReference"))
        i = resolve(i, types, namespaceDefs, recursive = TRUE, xrefInfo = types@circularDefs, type = notElementFun)    
     
     if(is(i, "SchemaTypes"))
@@ -360,7 +362,7 @@ if(showDefClassTrace)
                      asIntegerSetValue(from, 'a', 'b')
            body(fun)[[3]] = i@values
            body(fun)[[4]] = name
-           environment(fun) = emptyenv()
+           environment(fun) = globalenv()
            setAs("numeric", name, fun, where = where)
            setAs("character", name, fun, where = where)           
 
@@ -460,7 +462,7 @@ setMethod("defClass", "SchemaGroupType",
 
           })
 
-tmp = function(i, where = globalenv(),
+.tmp = function(i, where = globalenv(),
                 namespaceDefs = list(),
                 verbose = FALSE,
                 pending = new.env(hash = TRUE, emptyenv()),
@@ -471,7 +473,7 @@ tmp = function(i, where = globalenv(),
                 ignorePending = FALSE, opts = new("CodeGenOpts")) {
                  return(FALSE)
              }
-setMethod("defClass", "NULL", tmp)
+setMethod("defClass", "NULL", .tmp)
 #setMethod("defClass", "SchemaVoidType", tmp)
 
 setMethod("defClass", "SchemaVoidType",
@@ -604,11 +606,10 @@ setMethod("getDefaultValue", "LocalElement",
             })
 
 defineClassDefinition =
-function(i, types, namespaceDefs, name, classes, pending, baseClass, where = globalenv(), verbose = FALSE, force = FALSE, extendList = FALSE,
-          opts = new("CodeGenOpts"))
+function(i, types, namespaceDefs, name, classes, pending, baseClass, where = globalenv(),
+          verbose = FALSE, force = FALSE, extendList = FALSE, opts = new("CodeGenOpts"))
 {
 orig = i
-#if(name == "RequestData") browser()
   
      i@slotTypes = lapply(i@slotTypes, resolve, types, namespaceDefs)
 
@@ -660,9 +661,9 @@ orig = i
 
      if(is(i, "ExtendedClassDefinition")) {
 
-       baseType = resolve(i@baseType, types)
-       xbaseClass = mapSchemaTypeToS(baseType, types = types)
-       if(is.null(getClassDef(xbaseClass))) {
+        baseType = resolve(i@baseType, types)
+        xbaseClass = mapSchemaTypeToS(baseType, types = types)
+        if(is.null(getClassDef(xbaseClass))) {
 
 #         w = sapply(types, function(x) xbaseClass %in% names(x))
 #         if(any(w))
@@ -685,13 +686,14 @@ orig = i
        if(extendList) 
             baseClass = unique(c("list", baseClass))
 #XXXrepn
-         prot = if(opts@makePrototype) makePrototype(repn, i@slotTypes, baseClass, i@name, defaultValues) else NULL     
-         def = setClass(name, representation = repn, where = where, contains = baseClass, prototype = prot)
+if(name %in% c("ObjectType", "FeatureType", "NetworkLinkType")) browser()
+       prot = if(opts@makePrototype) makePrototype(repn, i@slotTypes, baseClass, i@name, defaultValues) else NULL     
+       def = setClass(name, representation = repn, where = where, contains = baseClass, prototype = prot)
 
-         if(is(i, "CompositeTypeDefinition"))
-              createListCoercion(name, repn, where = where)
+       if(is(i, "CompositeTypeDefinition"))
+             createListCoercion(name, repn, where = where)
             
-          def
+        def
 }
 
 
@@ -1146,6 +1148,21 @@ setMethod("defClass", "EnumValuesDef",
           })
 
 
+.tmp =           function(i, where = globalenv(),
+                   namespaceDefs = list(),
+                   verbose = FALSE,
+                   pending = new.env(hash = TRUE, emptyenv()),
+                   classes = new.env(hash = TRUE, emptyenv()),
+                   types = NULL,
+                   baseClass = BaseClassName, force = FALSE,
+                   name = getName(i),
+                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
+             NULL
+          }
+setMethod("defClass", "AttributeGroup", .tmp)
+setMethod("defClass", "AnyAttributeDef", .tmp)
+
+
 
 
 makePrototype =
@@ -1175,9 +1192,16 @@ function(repn, slots, base = NA, className = NA, defaults = NULL)
         # if there are some elements of repn that are not degenerate, then
         # create the prototypes from those and be done.
    if(!all(nas)) {
-       values =  mapply(as, defaults[!nas], repn[!nas], SIMPLIFY = FALSE)
+       values =  mapply(coerceValue, defaults[!nas], repn[!nas], SIMPLIFY = FALSE) # base %in% PrimitiveRClassNames
       # values[ names(str)[str & nas] ] = ""
+# return(values)
+          # need to specify a default for the base type for 
+       if(base %in% PrimitiveRClassNames)
+           values = c(vector(base), values)
+       else if(base == "list")
+           values = c(list(), values)            
        ans = do.call(prototype, values)
+       #ans = prototype(values)
        return(ans)
     }
     
@@ -1386,4 +1410,14 @@ function(className, baseType, where = globalenv())
   environment(fun) = globalenv()
   setAs("XMLAbstractNode", className, fun, where = where)
   def
+}
+
+
+coerceValue =
+function(val, to)
+{
+  if(to == "logical")
+     as(as(val, "integer"), "logical")
+  else
+     as(val, to)
 }
