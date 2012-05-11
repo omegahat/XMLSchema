@@ -39,7 +39,8 @@ XMLSchemaTypes <-
          #!!! string must appear before character since they will both match on type.
        "string" = list("xsi:type" = "xsd:string", type = "string", soapClass = "SchemaStringType",
                           from = as.character),
-       "character" = list("xsi:type" = "xsd:string", type = "string"),       
+       "character" = list("xsi:type" = "xsd:string", type = "string"),
+      
        "normalizedCharacter" = list("xsi:type" = "xsd:string", type = "normalizedString"),
        
        "numeric"   = list("xsi:type" = "xsd:float", type = "float"),
@@ -92,7 +93,8 @@ XMLSchemaTypes <-
 #NOTATION
        "NULL"      = list("xsi:null" = 1, "xsi:type" = "null", type = "null"),
 
-       "NMTOKEN" = list("xsi:NMTOKEN" = "NMTOKEN", type = "NMTOKEN")
+       "NMTOKEN" = list("xsi:NMTOKEN" = "NMTOKEN", type = "NMTOKEN"),
+      "AnySimpleType" = list("xsi:type" = "xsd:anySimpleType", type = "anySimpleType")       
     )
 
 
@@ -420,7 +422,7 @@ function(type, types = list(), namespaceDefs = list())
        type = type@type
 
      if(is(type, "SchemaTypeReference"))
-        type = resolve(type, types, namespaceDefs)
+        type = resolve(type, types, namespaceDefs, depth = NA)
 
      if(length(type@Rname))
        return(type@Rname)

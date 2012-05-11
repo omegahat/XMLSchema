@@ -87,7 +87,23 @@ setGeneric("genSlotFromConverterCode", function(elType, id)  standardGeneric("ge
 setMethod("genSlotFromConverterCode", "ANY",
    function(elType, id)
    {
-      optional = is(elType, "SchemaType") && length(elType@count) && (0 %in% elType@count)
+      orig = elType
+      isElement = is(elType, "Element")
+      if(isElement) {
+         elName = elType@name
+         defaultValue = elType@default
+         elType = elType@type
+      } else {
+         defaultValue = if(is(elType, "GenericSchemaType"))
+                           elType@default
+                        else
+                           NULL
+         elName = elType@name
+      }
+      
+      optional = ((is(elType, "SchemaType") || is(elType, "LocalElement")) && length(elType@count) && (0 %in% elType@count))
+      if(!optional && isElement && is(orig, "LocalElement"))
+          optional = length(orig@count) && (0 %in% orig@count)
 
       if(is(elType, "PrimitiveSchemaType")) {
 
@@ -102,14 +118,18 @@ setMethod("genSlotFromConverterCode", "ANY",
          else
             tmpl[[3]][[3]] = getRTypeFromSOAP(elType, "type")
 
-          if(optional)
+          if(optional) {
              prim.tmpl[[3]][[2]][[2]] = as.name("tmp")
+          }
       } else {
+#if(id == "LatLonBox") browser()        
           tmpl = gen.tmpl               
           tmpl[[3]][[3]] = getRTypeFromSOAP(elType, "type")
+          tmpl[[3]][[2]] = substitute(from[[name]], list(name = elName))
                                              # was if(is(elType, "GenericSchemaType")) elType@name else elType #XXXXXXX
-          if(optional)
+          if(optional) {
             tmpl[[3]][[2]] = as.name("tmp")
+          }
       }
                  # Convert names to NAMES, etc.
       tmpl[[2]][[3]] = as.name(id)
@@ -118,6 +138,21 @@ setMethod("genSlotFromConverterCode", "ANY",
         e = quote(if(!is.null(tmp <- from[[""]])) do)
         e[[2]][[2]][[2]][[3]][[3]] = id
         e[[3]] = tmpl
+
+        if(length(defaultValue)) {
+            els = quote(obj@id <- as(val, type))
+            els[[2]][[3]] = as.name(id)
+            els[[3]][[2]] = defaultValue
+            # In some cases, we can compute the value now rather than at run time.
+            # e.g. altitude in kml21.xsd defauting to 0 and having a type "numeric".
+            rtype = getRTypeFromSOAP(elType, "type")
+#if(id %in% c("altitude")) browser()                    
+            if(rtype %in% c("integer", "logical", "numeric", "character"))
+               els[[3]] = as(defaultValue, rtype)
+            else 
+               els[[3]][[3]] = rtype
+            e[[4]] = els
+        }
         e
       }  else
          tmpl
@@ -158,6 +193,7 @@ setMethod("createSOAPConverter",
                    # and then to the target type.
                                                            
                fun = callNextMethod()
+               
                if(type@base %in% c("character", "string")) {
                  e = quote(obj <- new("", XMLSchema:::getNodeText(from)))
                  e[[3]][[2]] = getRTypeFromSOAP(type@name, "type")
@@ -206,6 +242,12 @@ function(from)
   tmp = xmlApply(from, as, "PathwayElement")
   new("???", tmp)
 }
+
+# The following is a No-Op.
+setMethod("createSOAPConverter", "SchemaGroupType",
+                      function(type, namespaces, defs = NULL, types = list(), ...) {
+                            function(x, ...) {x}
+                      })
 
 setMethod("createSOAPConverter", "ANY",
                       function(type, namespaces, defs = NULL, types = list(), ...) {

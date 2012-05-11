@@ -196,6 +196,8 @@ processSchemaType =
 function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
            targetNamespace = character(), elementFormDefault = NA, localElements = FALSE)
 {
+  tmp = NULL
+
   if(inherits(type, c("XMLInternalCommentNode", "XMLComment", "XMLInternalTextNode")) || xmlName(type) == "annotation")
       return(new("SchemaVoidType"))
 
@@ -212,8 +214,18 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
    if(xmlName(type) == "attribute")
      return(processAttribute(type, name, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE, types = types))
 
+   if(xmlName(type) == "anyAttribute")
+       return(new("AnyAttributeDef"))
+
+#if(name == "grPostal") browser()   #DDDD
+
    if(xmlName(type) == "attributeGroup" && !is.na(xmlGetAttr(type, "ref", NA)))
      return(getAttributeGroup(type, namespaceDefs, targetNamespace, elementFormDefault))
+
+   if(xmlName(type) == "attributeGroup" && is.na(xmlGetAttr(type, "ref", NA)))
+     return(makeAttributeGroup(type, types, namespaceDefs, targetNamespace,
+                                 substitutionGroups = substitutionGroups,
+                                  elementFormDefault = elementFormDefault, localElements = localElements)) 
 
 
    if(xmlName(type) == "any")  #XXX check the namespace
@@ -244,30 +256,9 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
 
   if(xmlName(type) == "element" && !is.na(xmlGetAttr(type, "type", NA)) && xmlSize(type) == 0) {
 
-    #XXXX  can we just call processSchemaElement and ignore the remainder of this if() body
+            #XXXX  can we just call processSchemaElement and ignore the remainder of this if() body
     return(processSchemaElement(type, name, namespaceDefs, types, targetNamespace = targetNamespace,
                                  elementFormDefault = elementFormDefault, localElements = localElements))
-    
-       # an element that really just refers to another type definition.
-    refName = discardNamespace( xmlGetAttr(type, "type") ) #XXX stripping away name space but have to be careful if there is more than one.
-    refNode = getNodeSet(as(type, "XMLInternalDocument"), paste("//x:*[@name=", sQuote(refName), "]"),
-                            c("x" = "http://www.w3.org/2001/XMLSchema"))
-
-    w = sapply(refNode, function(x) xmlName(x) %in% c("element", "complexType") && xmlGetAttr(x, "name") == refName &&
-                                  discardNamespace( xmlGetAttr(type, "type") ) == refName)
-    refNode = refNode[!w]
-    
-    ref = if(length(refNode) == 0) {
-             # lookup the ref in the basic types
-             # NULL
-           mapSchemaTypeToS(xmlGetAttr(type, "type"))
-          } else {
-             processSchemaType(refNode[[1]], types, namespaceDefs = namespaceDefs,
-                                targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
-          }
-    if(is.character(ref))
-       ref = SchemaType(xmlGetAttr(type, "type"), namespaceDefs = namespaceDefs)
-    return(new("Element", name = name, type = ref, targetNamespace = as.character(targetNamespace))) #XXX  attributes = ref@attributes,
     
   } else if(name == "simpleType" || xmlName(type) == "simpleType") {
     done = TRUE
@@ -304,13 +295,14 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
            def = createRestrictionType(name, type[[1]], namespaceDefs, targetNamespace, base)
 
        } else {
-         # e.g. from eBaySvc.wsdl
-         # <xs:simpleType name="DisputeIDType">
-         #   <xs:restriction base="xs:string"/>
-         # </xs:simpleType>
+                     # e.g. from eBaySvc.wsdl
+                     # <xs:simpleType name="DisputeIDType">
+                     #   <xs:restriction base="xs:string"/>
+                     # </xs:simpleType>
          def = new("ExtendedClassDefinition", name = name, base = xmlGetAttr(type[[1]], "base"),
                        baseType = SchemaType(xmlGetAttr(type[[1]], "base"), namespaceDefs = namespaceDefs))
        }
+       
    } else if(xmlSize(type) > 0 && xmlName(type[[1]]) == "list") {
 
        if(xmlSize(type[[1]]) > 0) {
@@ -333,7 +325,7 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
       els = lapply(tp, SchemaType, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace)
     
       types = lapply(xmlChildren(u), processSchemaType, types = types, localElements = TRUE, targetNamespace = targetNamespace, namespaceDefs = namespaceDefs, localElements = TRUE)
-       
+  if(is.na(name)) browser()
       def = new("UnionDefinition", name = name, slotTypes = c(types, els))
    } else
        def <- "xsd:string"
@@ -361,7 +353,9 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
       attrs = list()
       #!!! can use lapply now that we have general call to processSchemaTypes() rather than to different specific functions.
       for(i in kids[names(ext) %in% c("attribute", "attributeGroup")])
-        attrs = c(attrs, processSchemaType(i, types, substitutionGroups, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE))
+        attrs = c(attrs, processSchemaType(i, types, substitutionGroups, namespaceDefs = namespaceDefs,
+                                              targetNamespace = targetNamespace,
+                                              elementFormDefault = elementFormDefault, localElements = TRUE))
       names(attrs) = sapply(attrs, slot, "name")
 
      return(new("SimpleElement", name = xmlGetAttr(type, "name", as.character(NA)),
@@ -377,16 +371,14 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
   } else if(xmlName(type) == "complexType" && xmlSize(type) == 0) {
           #??? What do we do here.  See "http://www.ebi.ac.uk/ebisearch/service.ebi?wsdl" for example.
     return(new("AnySchemaType", name = if(name != "") name else "AnySchemaType"))
-  } else if(xmlName(type) == "complexType" && xmlName(type[[1]]) == "all")
-    tmp = type
-  else if(xmlName(type) == "complexType" &&
+    
+  } else if(xmlName(type) == "complexType" && xmlName(type[[1]]) == "all") {
+     tmp = type
+  } else if(xmlName(type) == "complexType" &&
             ( (xmlSize(type) == 1 && names(type) == "sequence")
-                  || ("sequence" %in% names(type)  && (all(names(type) %in% c("attribute", "annotation", "sequence"))))))  {
-
-
-
-
-    # we can just use xmlApply(, processSchemaType) then merge the slotTypes, etc.
+                  || ("sequence" %in% names(type)  && (all(names(type) %in% c("attribute", "anyAttribute", "annotation", "sequence"))))))  {
+# compare with condition at #377
+            # we can just use xmlApply(, processSchemaType) then merge the slotTypes, etc.
 if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some surgery to add the extra elements.
 
       els = xmlApply(type, processSchemaType, types, substitutionGroups, namespaceDefs, targetNamespace, elementFormDefault, localElements)
@@ -413,6 +405,18 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
       seq = processSequence(type[["sequence"]], types, namespaceDefs, name, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault)
     return(seq)
     }
+  } else if(xmlName(type) == "complexType" && (all(names(type) %in% c("attribute", "anyAttribute", "annotation", "sequence")))) {
+            # so all attributes
+            # could merge this with the case below, but for now just get it working.
+#browser()     # xAL is defined here, PostalServiceElements
+     kids = xmlChildren(type)[ !xmlSApply(type, function(x) xmlName(x) == "annotation") ]
+     stypes = lapply(kids, processSchemaType, types, substitutionGroups, namespaceDefs = namespaceDefs,
+                                              targetNamespace = targetNamespace,
+                                              elementFormDefault = elementFormDefault, localElements = TRUE)
+     ClassDef(name, stypes, targetNamespace = targetNamespace, documentation = docString)
+#     new("ClassDefinition", name = name, Rname = name, slotTypes = stypes, documentation = docString,
+#                     isAttribute = rep(TRUE, length(stypes)), nsuri = targetNamespace)
+    
   } else if(FALSE && xmlName(type) == 'complexType' && all(names(type) %in% c("attribute", "attributeGroup"))) {
       #XXX what about any attributes on the complexType such as mixed="true".
        # Just an attribute group within the complexType.
@@ -512,7 +516,6 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
           def@attributes[names(attrs)] = attrs
       }
 
-#if(length(name) && !is.na(name) && name  ==  "parameters") browser()
       def = postprocessComplexType(def)
 #XXX deal with attribute group.  
 #    Also  xs:choice for an element with the <xs:all>
@@ -539,7 +542,7 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
      if(xmlSize(type) > 1) {
         kids = xmlChildren(type)[-1]
         w = sapply(kids, xmlName) != "annotation"
-#        browser()
+
         if(any(w)) {
           kids = kids[w]
           defs = lapply(kids, processSchemaType, types, substitutionGroups, namespaceDefs, targetNamespace, elementFormDefault, localElements = TRUE)
@@ -567,14 +570,29 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
           def <- NULL
     }
   } else if(xmlName(type) == "complexType" &&
-               xmlSize(type) > 0 && all(xmlSApply(type, xmlName) == "attribute")) {
+            xmlSize(type) > 0 && all(xmlSApply(type, xmlName) %in% c("attribute", "anyAttribute", "attributeGroup", "annotation"))) {
+#XXX See line 377. This is almost an identical condition. This has no sequence in it.
 
           # ???Can't this be merged with another mechanism to process the children???
-        els = xmlApply(type, processAttribute, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE, types  = types)
+        w = xmlSApply(type, xmlName) == "attribute"
+
+        els = lapply(type[w], processAttribute, namespaceDefs = namespaceDefs,
+                                  targetNamespace = targetNamespace, elementFormDefault = elementFormDefault,
+                                  localElements = TRUE, types  = types)
+
+        w =  which(xmlSApply(type, xmlName) == "attributeGroup")
+        for(k in w) {
+            tmp = processAttribute(type[[k]], namespaceDefs = namespaceDefs, targetNamespace = targetNamespace,
+                                     elementFormDefault = elementFormDefault, localElements = TRUE, types  = types)
+            els[names(tmp)] = tmp
+        }
+
+        
         name = xmlGetAttr(type, "name")
-        def = new("ClassDefinition", name = name, slotTypes = structure(els, names = xmlSApply(type, xmlGetAttr, "name")),
-                                      documentation = docString, isAttribute = rep(TRUE, length(els)),
-                                      nsuri = targetNamespace)
+           # used to define the class here directly with new("ClassDefinition")
+        def = ClassDef(name, slotTypes = structure(els, names = xmlSApply(type, xmlGetAttr, "name")),
+                         documentation = docString, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault,
+                         uris = targetNamespace)        
      #   def = new("SchemaComplexType", name = name, attributes = els)
      #   def@xmlAttrs = as(xmlAttrs(type), "character")
 
@@ -601,7 +619,7 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
 
     def = ClassDef(name, list(), targetNamespace = targetNamespace, elementFormDefault = elementFormDefault)
      # now handle the childen.
-#    browser()
+
     kids = dropAnnotationNodes(type)
     els = lapply(kids, processSchemaType, types = types, namespaceDefs = namespaceDefs,
                                        targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
@@ -786,6 +804,15 @@ setMethod("getElementName", "ANY",
 function(node, keepNS = FALSE, ...)
 {  
   ans = xmlGetAttr(node, "name", xmlGetAttr(node, "ref", if(xmlName(node) == "any") "any" else as.character(NA)))
+
+  if(is.na(ans)) {
+      if(xmlName(node) %in% c("choice", "sequence") ) {
+         kids = !(xmlSApply(node, xmlName) %in% c("annotation", "documentation"))
+         ans = paste(sapply(xmlChildren(node)[kids], getElementName, FALSE),
+                     collapse = switch(xmlName(node), sequence = ".", choice = "Or", "."))
+     } else
+        warning("NA from getElementName() for ", saveXML(node))
+  }
   if(keepNS)
     ans
   else
@@ -890,8 +917,10 @@ if(FALSE) {
                        
   slotTypes = slotTypes[ ! sapply(slotTypes, is.null) ]
 
-  if(length(name) == 0 || is.na(name) || name == "")
+   if(length(name) == 0 || is.na(name) || name == "") {
+if(any(is.na(ids))) browser()     #XXX
       name = paste(ids, collapse = ".")
+   }
   
   if(TRUE || !is.na(name))
     ClassDef(name, slotTypes, elementFormDefault = elementFormDefault, targetNamespace = targetNamespace)
@@ -927,6 +956,8 @@ processSchemaElement =
 function(element, name = xmlGetAttr(element, "name"), namespaceDefs = list(), types = NULL,
                    targetNamespace = NA, elementFormDefault = NA, localElements = FALSE)
 {
+#if(length(name) && !is.na(name) && name  == "altitude") browser()
+
   defaultValue = xmlGetAttr(element, "default", NA_character_) #XXX Immediate character()  
   attrs = xmlAttrs(element)
 
@@ -992,8 +1023,8 @@ if(FALSE) {
 
         el = element[[1]]
          #XXX Forcing the name here.  But it doesn't seem to be used so can back this out.
-        if(is.null(xmlGetAttr(el, "name")))
-           xmlAttrs(el) = c(name = name)
+#        if(is.null(xmlGetAttr(el, "name")))
+#           xmlAttrs(el) = c(name = name)
 
         type = processSchemaType(el, types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace,
                                   elementFormDefault = elementFormDefault, localElements = TRUE)
@@ -1051,8 +1082,11 @@ optionalDefaultValue =
 function(obj, default = obj@default)
 {
 #XXX
- # return(default)
-#if(obj@name == "User.Request.RequestFlags") browser()
+  if(is(obj, "SchemaTypeReference"))
+    return(default)
+
+  if(length(default) && !is.na(default))
+    return(default)
 
 
    if(is(obj, "ClassDefinition") && typeof(default) %in% c("integer", "logical", "character", "numeric"))
@@ -1134,8 +1168,11 @@ function(refNode, namespaceDefs = list(), targetNamespace = NA, elementFormDefau
           # look for the explicit name in case it has a ns:name
       agroup = getNodeSet(doc, paste("//xs:attributeGroup[@name=", sQuote(xmlGetAttr(refNode, "ref")), "]"), c(xs = "http://www.w3.org/2001/XMLSchema"))
        
-       if(length(agroup) == 0)
-           stop("Cannot find attribute group named ", sQuote(groupName))
+       if(length(agroup) == 0) {
+browser()                 
+          return(new("AttributeGroupReference", name = groupName))
+#           stop("Cannot find attribute group named ", sQuote(groupName))
+        }
      }
      processAttributeGroup(agroup[[1]], namespaceDefs, targetNamespace, elementFormDefault, localElements, types)
 }
@@ -1154,34 +1191,64 @@ processAttribute =
 function(node, name = xmlGetAttr(node, "name"), type = xmlGetAttr(node, "type", as.character(NA)),
           namespaceDefs = character(), targetNamespace = NA, elementFormDefault = NA, localElements = FALSE, types = list())
 {
-#if(!is.na(name) && name == "isRecursive") browser()  
+  if(xmlName(node) == "attributeGroup")
+         # whoever calls processAttribute has to be able to handle 
+     return(getAttributeGroup(node, namespaceDefs, targetNamespace, elementFormDefault, localElements, types))
+  
+   ns = character()
+   
+   if(xmlName(node) == "anyAttribute")
+     return(new("AnyAttributeDef")) #XXX  Namespace
 
    if(!is.null(ref <- xmlGetAttr(node, "ref"))) {
+          #XXX merge with getAttributeGroup
       tmp = getNodeSet(as(node, "XMLInternalDocument"), sprintf("//xsd:schema/xsd:attribute[@name='%s']",
                                                                 gsub("[a-z0-9]+:", "", ref)),
                   c(xsd = "http://www.w3.org/2001/XMLSchema"))
-      if(length(tmp) == 0)
+      
+      if(length(tmp) == 0 && grep(":", ref)) {
+         els = strsplit(ref, ":")[[1]]
+         ns = els[1]
+         ref = els[2]
+browser()         
+         tmp = getNodeSet(as(node, "XMLInternalDocument"), sprintf("//xsd:schema/xsd:attribute[@name='%s']",
+                                                                gsub("[a-z0-9]+:", "", ref)),
+                           c(xsd = "http://www.w3.org/2001/XMLSchema"))
+      }
+      
+      if(length(tmp) == 0) {
+browser()
+         nsuri = if(length(ns) && !is.na(i <- match(ns, names(namespaceDefs)))) 
+                    namespaceDefs[[i]]$uri
+                 else
+                    character()
+         return(new("AttributeGroupReference", name = ref, ns = ns, nsuri = nsuri)) #, namespace = as(targetNamespace, "character")))
          stop("Cannot find attribute reference for ", ref)
+      }
       node = tmp[[1]]
    }
      
    if(is.na(type) && xmlSize(node)) {
      if(xmlName(node[[1]]) == "simpleType" &&
            xmlName(node[[1]][[1]]) == "restriction") {
-        # handle non-string types too in the restriction.
-if(FALSE) {
-#XXX remove this for the else clause  
-       type = new("EnumValuesDef", values = xmlSApply(node[[1]][[1]], xmlGetAttr, "value"))
-       type@name = paste(type@values, collapse = ",")
-} else {
-  # Should be and now is....
-       type = processSchemaType(node[[1]], types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE)
-       if(is.na(type@name) || type@name == "")
-          type@name = type@Rname = sprintf("%s.Enum", name)
- }
+                  # handle non-string types too in the restriction.
+          type = processSchemaType(node[[1]], types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace,
+                                     elementFormDefault = elementFormDefault, localElements = TRUE)
+          if(is.na(type@name) || type@name == "")
+              type@name = type@Rname = sprintf("%s.Enum", name)
+
      } else
-        warning("<fixme> Skipping children in <attribute> definition")
-    }
+        if(xmlSize(node) > 1 || xmlName(node[[1]]) != "annotation") {
+          nodeNames = xmlSApply(node, xmlName)
+          if(setdiff(nodeNames, "annotation") == "simpleType") {
+             type = processSchemaType(node[["simpleType"]], types, namespaceDefs = namespaceDefs,
+                                       targetNamespace = targetNamespace, elementFormDefault = elementFormDefault,
+                                         localElements = TRUE)
+          } else
+             warning("<fixme> Skipping children ", paste(nodeNames, collapse = ", "),
+                        " in <attribute> definition ", xmlGetAttr(node, "name"))
+        }
+   }
 
 
    if(is.character(type)) {
@@ -1377,15 +1444,18 @@ function(def)
   if(is(def@content, "ClassDefinition"))  {
     ans = def@content
   } else if(is(def@content, "SimpleSequenceType"))
+if(FALSE) {    
     ans = new("ClassDefinition", slotTypes = list(def@content))
     
    ans@documentation = def@documentation
    ans@name = def@name
    ans@Rname = def@Rname
-
    nslot = length(ans@slotTypes)
    ans@isAttribute = c(rep(FALSE, nslot), rep(TRUE, length(def@attributes)))
-   ans@slotTypes = c(ans@slotTypes, def@attributes)
+   ans@slotTypes = c(ans@slotTypes, def@attributes)    
+}
+  ans =  ClassDef(def@name, c(def@content, def@attributes), targetNamespace = def@nsuri, documentation = def@documentation)
+
    ans
 }
 
@@ -1397,4 +1467,13 @@ function(name, other)
      other
   else
      name
+}
+
+makeAttributeGroup = 
+function(node, context, namespaceDefs = list(), targetNamespace = NA, ...)
+{
+   ans = new("AttributeGroup", name = xmlGetAttr(node, "name"), nsuri = as(targetNamespace, "character"))
+   ans@attributes = xmlApply(node, processSchemaType, types = context,
+                                     namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, ...)
+   ans
 }

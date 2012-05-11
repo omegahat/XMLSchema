@@ -11,12 +11,21 @@ DefaultFunctionNamespace = getNamespace("XML")
 
 #???  should this be in another package, e.g. XML?
 setClass("URI", contains = "character")
+setAs("character", "URI",
+        function(from) new("URI", from))
 
 setClass("string", contains = "character")
 setAs("XMLAbstractNode", "string",
       function(from)
         new("string", xmlValue(from)))
 
+
+setClass("ListOfAnySimpleType", contains = "list",
+           validity = function(object) if(!all(sapply(object, is, "AnySimpleType")))
+                                            "not all elements are simple"
+                                       else
+                                           TRUE)
+        
 
 # A class to map the names of elements to the R class to which they correspond.
 # e.g. <kml> - KmlType
@@ -93,7 +102,7 @@ setClass("SchemaVoidType", representation("SchemaType"),
             prototype = list(name = "null", ns = "xsi"))
 
 setClass("SchemaTypeReference", representation("SchemaType"))
-
+setClass("AttributeGroupReference", contains = "SchemaTypeReference")
 
 
 setClass("TerminalSchemaType", representation("VIRTUAL"))
@@ -186,13 +195,21 @@ setClass("RestrictedHexBinary", representation(length = "integer", pattern = "ch
 
 setClassUnion("AttributeType", c("RestrictedStringType", "EnumValuesDef", "character", "GenericSchemaType"))
 
-setClass("AttributeDef", representation(name = "character",
-                                        type = "AttributeType",
+ # We have two types of attributes - an actual one and a wildcard one.
+ # So we use a common base class.
+ #  We don't actually need the name for the AnyAttributeDef, but we share it here for now
+ # since the code that processes the nodes in the schema wants to set the name.
+setClass("GenericAttributeType", contains = "GenericSchemaType") # was "XMLSchemaComponent"
+
+setClass("AnyAttributeDef", contains = "GenericAttributeType")
+setClass("AttributeDef", representation(type = "AttributeType",
                                         use = "character",  # prohibited, optional, required
                                         default = "character",
                                         fixed = "character"
                                         ),
-                         prototype = list(use = "optional"), contains = "XMLSchemaComponent")
+                         prototype = list(use = "optional"), contains = "GenericAttributeType")
+
+setClass("AttributeGroup", representation(attributes = "list"), contains = "GenericAttributeType")
 
 
 setClassUnion("SchemaTypeOrElement", c("SchemaType", "Element")) # Don't need if elType in SimpleSequenceType is not this union.

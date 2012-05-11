@@ -44,7 +44,7 @@
 }
 \usage{
 resolve(obj, context, namespaces = character(), recursive = TRUE,
-        raiseError = TRUE, xrefInfo = NULL)
+        raiseError = TRUE, xrefInfo = NULL, type = NA, depth = 1L, ...)
 }
 \arguments{
   \item{obj}{the name of the type to search for}
@@ -63,6 +63,18 @@ resolve(obj, context, namespaces = character(), recursive = TRUE,
     data types.  This is almost never specified by the R user but passed
     recursively within the calls to resolve and from higher-level
     functions that call resolve.}
+  \item{type}{either a function or one of \code{NULL} or \code{NA}.  If
+    this is a function, this is used to filter possible matches. The
+    primary
+      purpose is to avoid matching Element objects with the same name as
+      a data type definition in the schema. Without this, we would get
+      into infinite loops.
+     More generally, this  allows us to select a particular entry in a schema in preference to
+     others all with the same names. See \code{XMLSchema:::notElementFun}.
+   }
+   \item{depth}{an integer that indicates the depth of the recursion.
+     This is used for aiding debugging infinite loops.}
+   \item{\dots}{additional parameters to resolve that the methods can add}
 }
 \value{
  An object of class \code{\link{SchemaType-class}}.

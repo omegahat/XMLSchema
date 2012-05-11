@@ -188,15 +188,17 @@ function(node, doc = xmlDoc(node), namespaceDefs = gatherNamespaceDefs(node), cr
 
   ans = new("SchemaCollection", els)
   if(checkCircularTypes && length(els) > 0) {
-    nsDefs = unlist(lapply(ans, function(x) x@namespaceDefs), recursive = FALSE)
-    names(nsDefs) = sapply(nsDefs, function(x) x$id)
-    ans@circularDefs = makeCrossRefTypes(findTypeLoops(node, namespaceDefs = nsDefs))
-
+    ans@circularDefs = computeCircularDefs(ans, node)
     ans = fixTypeNames(ans, ...)
   }
-  
 
   ans
-
 }
 
+computeCircularDefs =
+function(ans, node)
+{  
+    nsDefs = unlist(lapply(ans, function(x) x@namespaceDefs), recursive = FALSE)
+    names(nsDefs) = sapply(nsDefs, function(x) x$id)
+    makeCrossRefTypes(findTypeLoops(node, namespaceDefs = nsDefs))
+}

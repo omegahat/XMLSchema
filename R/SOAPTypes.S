@@ -129,17 +129,47 @@ ClassDef =
   #  Fill in obj with the details of a ClassDefinition or a UnionDefinition
   # 
 function(name, slotTypes, uris = as.character(rep(NA, length(slotTypes))),
-          obj = new("ClassDefinition"), targetNamespace = NA, elementFormDefault = NA)
+          obj = new("ClassDefinition"), targetNamespace = NA, elementFormDefault = NA, documentation = character())
 {
+#if(name == "AbstractObjectType") browser()
+
   obj@name = name
+
+  if(length(obj@Rname) == 0)
+      obj@Rname = name
 
   ids = names(slotTypes)
   if(length(slotTypes) && any(is.na(ids)))
          # Potentially need a ListOf rather than the element types here.
       names(slotTypes)[is.na(ids)] = sapply(slotTypes[is.na(ids)], getName, compute = TRUE)
 
+
   obj@slotTypes = slotTypes
 
+       # if there is a slot that has no name ("") and it is a sequence
+       # 
+   if(any(i <- names(slotTypes) == "")) {
+# browser()
+       i = which(i)
+       if(length(i) == 1 && is(slotTypes[[i]], "SimpleSequenceType")) {
+          # def = as(obj, "ExtendedClassDefinition")
+          def = new("ExtendedClassDefinition")
+             def@name = obj@name; def@Rname = obj@Rname; def@nsuri = obj@nsuri ; def@ns = obj@ns
+             def@count = obj@count; def@default = obj@default
+          def@base = "list"
+          def@baseType = obj@slotTypes[[i]]
+          def@slotTypes = obj@slotTypes[-i]
+          obj = def
+       }
+  }
+
+  if(length(obj@slotTypes)) {
+     obj@isAttribute = sapply(obj@slotTypes, is, "GenericAttributeType")
+
+     names(obj@slotTypes)[obj@isAttribute] = sapply(obj@slotTypes[obj@isAttribute], slot, "name")
+   }
+
+  obj@documentation = documentation
 
   if(!is.na(elementFormDefault) && (elementFormDefault || elementFormDefault == "qualified"))
      obj@uris = rep(as.character(targetNamespace), length(slotTypes))
@@ -152,6 +182,7 @@ function(name, slotTypes, uris = as.character(rep(NA, length(slotTypes))),
   i = match(names(obj@slotTypes), ReservedSlotNames)
   if(any(!is.na(i)))
      names(obj@slotTypes)[!is.na(i)] = toupper(names(obj@slotTypes)[!is.na(i)])
+
   
   obj
 }
@@ -160,6 +191,7 @@ UnionDef =
 function(name, slotTypes, uris = as.character(rep(NA, length(slotTypes))), obj = new("UnionDefinition"),
          targetNamespace = NA, elementFormDefault = NA)
 {
+ if(is.na(name)) browser()
    ClassDef(name, slotTypes, uris, obj = obj, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault)
 }
 

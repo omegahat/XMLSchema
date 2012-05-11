@@ -17,10 +17,28 @@ function(..., class = "SchemaResolveError")
 DefaultPending = list(names = character(), types = list())
 
 setGeneric("resolve", function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
-                                type = NA,  ...)
+                                type = NA, depth = 1L, work = NULL,  ...)
                       {
                         if(FALSE) #XXXX Temporary turn off May 5th 2012
                             obj = findSelfRefs(obj)
+
+                        if(is.null(work))
+                          work = list(pending = new.env(), resolved = new.env())
+                        
+                        if(!is.null(work)) {
+                          id = sprintf("%s:%s:%s", class(obj), getName(obj), class(context))
+                          if(exists(id, work$pending, inherits = FALSE)) {
+#                            cat("looking for", id, "and it is in pending, depth = ", depth, "\n")
+#                            browser()
+                          }
+                          if(exists(id, work$resolved))
+                             return(get(id, work$resolved))
+                          
+                          assign(id, obj, work$pending)
+                          on.exit({remove(list = id, envir = work$pending)
+#                                   cat("finished resolving", id, "\n")
+                                   assign(id, ans, work$resolved)})
+                        }
                        
                        if(is.null(xrefInfo) && is(context, "SchemaCollection"))
                           xrefInfo = context@circularDefs
@@ -33,7 +51,8 @@ setGeneric("resolve", function(obj, context, namespaces = character(), recursive
                      })
 
 setMethod("resolve", c("SelfRef", "SchemaCollection"),
-          function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+          function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
+                        type = NULL, depth = 1L, work = NULL, ...) {
              i = match(obj@nsuri, names(context))
              if(is.na(i)) 
                  stop("Can't find the schema with URI ", obj@nsuri)
@@ -43,14 +62,15 @@ setMethod("resolve", c("SelfRef", "SchemaCollection"),
 
 
 setMethod("resolve", c("RestrictedStringPatternDefinition", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
+                       type = NULL, depth = 1L, work = NULL, ...) {
               obj
            })
 
 
 setMethod("resolve", c("AttributeDef", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
-              ans = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type, ...)
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) {
+              ans = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
               ans@default = obj@default
 #             ans
 #XXXX ADDING THIS TEMPORARILY               Fri May 4, 12:33 2012
@@ -59,12 +79,14 @@ setMethod("resolve", c("AttributeDef", "SchemaCollection"),
            })
 
 setMethod("resolve", c("NULL", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
+                            type = NULL, depth = 1L, work = NULL, ...) {
              NULL
            })
 
 setMethod("resolve", c("BasicSchemaType", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
+                       type = NULL, depth = 1L, work = NULL, ...) {
              stop("No method for this type ", class(obj))
            })
 
@@ -73,28 +95,31 @@ setMethod("resolve", c("BasicSchemaType", "list"),
 # Here for StringArray in processWSDL("MassSpecAPI.wsdl", port = 3)
 # That resolves to a ComplexType with a SimpleSequenceType
 setMethod("resolve", c("SchemaComplexType", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
+                       type = NULL, depth = 1L, work = NULL, ...) {
              if(length(obj@content) == 1)
-                 return(resolve(obj@content, context, namespaces, recursive, raiseError, xrefInfo, type, ...))
+                 return(resolve(obj@content, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...))
 
 warning("probably need to do something different in resolve(SchemaComplexType, SchemaCollection) ", obj@name)
          #XXXX not appropriate
-             resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, ...)                                      
-           })
+             resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work,  ...)
+       })
 
 if(FALSE) {
 setMethod("resolve", c("SchemaTypeReference", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, ...) {
              
-             resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, ...)
+             resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, ...)
            })
 
 
 #XXX Remove.Replaced by one directly below.
 setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
+                             type = NULL, depth = 1L, work = NULL, ...) {
 
              if(!is.null(xrefInfo) && !is.null(xrefInfo$crossRefNames) &&
+                    length(xrefInfo$crossRefNames) &&  length(obj@nsuri) && 
                       sprintf("%s:%s", obj@nsuri, obj@name) %in%  xrefInfo$crossRefNames) {
                    tp = xrefInfo$types
                    w = sapply(tp, function(tt) {
@@ -104,17 +129,32 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
                    return(tp[w][[1]])
              }
                 
-             ans = resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, ...)
+             ans = resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
              ans@default =  optionalDefaultValue(ans, obj@default)
              ans
            })
 }
 
+setMethod("resolve", c("AnyAttributeDef", "SchemaCollection"),
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE,
+                      xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
+             obj
+           })
+
+setMethod("resolve", c("AttributeGroup", "SchemaCollection"),
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
+                        type = NULL, depth = 1L, work = NULL,  ...) {
+
+               obj@attributes = lapply(obj@attributes, resolve, context, namespaces, recursive, raiseError, xrefInfo, depth = depth + 1L, work = work, ...)
+               obj
+              })
+
 setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
 
              if(!is.null(xrefInfo) && !is.null(xrefInfo$crossRefNames) &&
-                            sprintf("%s:%s", obj@nsuri, obj@name) %in%  xrefInfo$crossRefNames) {
+                    length(xrefInfo$crossRefNames) &&  length(obj@nsuri) && 
+                      sprintf("%s:%s", obj@nsuri, obj@name) %in%  xrefInfo$crossRefNames) {            
 
                    tp = xrefInfo$types
                    w = sapply(tp, function(tt) {
@@ -128,12 +168,15 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
                return(obj)             
 
                  # check if the reference is to one of the built-in types in XSD and if so, resolve it directly.
-             if(obj@nsuri %in% getXSDSchemaURIs()) 
+             if(length(obj@nsuri) && obj@nsuri %in% getXSDSchemaURIs()) 
                  return(SchemaType(obj@name, nsuri = obj@nsuri, namespaceDefs = namespaces))
 
 
                  # find which context element corresponds to the URI we have in the object.
-             i = match(obj@nsuri, names(context))
+             if(length(obj@nsuri))
+                i = match(obj@nsuri, names(context))
+             else
+                i = which(sapply(context, function(x) obj@name %in% names(x)))[1]
              
              if(is.na(i)) {
                    if(length(context) == 1 && names(context) == "" && is.na(obj@nsuri))
@@ -144,10 +187,14 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
              }
 
 #XXX original May 6, 2012 was just   ans = context[[i]][[ obj@name ]]
-
-   if(is.null(type) || length( m <- which(obj@name == names(context[[i]]))) == 1)
-       ans = context[[i]][[ obj@name ]]
+#browser()
+   m <- which(obj@name == names(context[[i]]))
+   if(length( m ) == 1) 
+       ans = context[[i]][[ m ]]
    else {
+      if(is.null(type))
+         type = notElementFun                  
+
       m =  sapply(context[[i]][m], type)
       if(!any(m))
         stop("failed to find suitable object")
@@ -156,7 +203,10 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
      ans = context[[i]][m][[ which(m)[1] ]]
    }
 
-   ans = resolve(ans, context, namespaces, recursive, FALSE, xrefInfo, type, ...)
+   if(recursive == FALSE)
+      return(ans)
+             
+   ans = resolve(ans, context, namespaces, recursive, FALSE, xrefInfo, type, depth = depth + 1L, work = work, ...)
 
           
              if(is.null(ans) && length(obj@name) && !is.na(obj@name) && substring(obj@name, 1, 7) == "ArrayOf") {
@@ -165,30 +215,33 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
                   ans = new("SimpleSequenceType",
                                name = obj@name,
                                elementType = elementType,
-                               elType = resolve(elementType, context, namespaces, recursive, raiseError, xrefInfo, ...))
+                               elType = resolve(elementType, context, namespaces, recursive, raiseError, xrefInfo, depth = depth + 1L, work = work, ...))
               }
 
                 ans
            })
 
+
 setMethod("resolve", c("AttributeDef", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
-             obj #XXX
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
+                 # just return the attribute
+              obj@type = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type, depth + 1L, work = work, ...)
+              obj #XXX
            })
 
 
 setMethod("resolve", c("UnionDefinition", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
 #if(obj@name == "iType") browser()
-             obj@slotTypes = lapply(obj@slotTypes, resolve, context, namespaces, recursive, ...)
+             obj@slotTypes = lapply(obj@slotTypes, resolve, context, namespaces, recursive, depth = depth + 1L, work = work, ...)
              obj
            })
 
 setMethod("resolve", c("ClassDefinition", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
 
              obj@isAttribute = as.logical(sapply(obj@slotTypes, is, "AttributeDef"))
-             obj@slotTypes = lapply(obj@slotTypes, resolve, context, namespaces, recursive, raiseError, xrefInfo, ...)
+             obj@slotTypes = lapply(obj@slotTypes, resolve, context, namespaces, recursive, raiseError, xrefInfo, depth = depth + 1L, work = work, ...)
 
             
          # This can go but is an experiment  to reduce/simplify the type
@@ -207,45 +260,52 @@ setMethod("resolve", c("ClassDefinition", "SchemaCollection"),
            })
 
 setMethod("resolve", c("WSDLTypeDescription", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
-             resolve(obj$definition, context, namespaces, recursive, raiseError, xrefInfo, type, ...)
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
+                      type = NULL, depth = 1L,  work = NULL, ...) {
+             resolve(obj$definition, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
            })
 
 
 setMethod("resolve", c("PrimitiveSchemaType", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE,
+                      xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) {
              obj
            })
 
 
 
 setMethod("resolve", c("SchemaVoidType"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE,
+                     xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
              obj
            })
 
 
 setMethod("resolve", c("ArrayType", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE,
+                      xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) {
              if(recursive && (is.null(obj@elType) || length(obj@elType@name) == 0)) {
                name = obj@elementType
-               obj@elType = resolve(name, context, namespaces, recursive, raiseError, xrefInfo, ...)
+               obj@elType = resolve(name, context, namespaces, recursive, raiseError, xrefInfo, depth = depth + 1L, work = work, ...)
              }
              obj
            })
 
 setMethod("resolve", c("SchemaVoidType", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) 
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE,
+                      xrefInfo = NULL, type = NULL, depth = 1L, ...) 
 	       return(obj))
 
 setMethod("resolve", c("SchemaVoidType"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) 
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE,
+                      xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) 
 	       return(obj))
 
 
 
 setMethod("resolve", c("character", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE,
+                      xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) {
 #if(!is.na(type)) browser()
     browser()
              els = strsplit(obj, ":")[[1]]
@@ -256,7 +316,7 @@ setMethod("resolve", c("character", "SchemaCollection"),
                 if(!is.na(i)) {
                    tp = SchemaType(els[2], els[2], namespaces[[i]]$uri)
                    if(recursive)
-                      tp = resolve(tp, context, namespaces, recursive, raiseError, xrefInfo)
+                      tp = resolve(tp, context, namespaces, recursive, raiseError, xrefInfo, depth = depth + 1L, work = work, ...)
                    return(tp)
                 } else {
                   warning("namespace prefix doesn't match any in namespaces")
@@ -271,7 +331,7 @@ setMethod("resolve", c("character", "SchemaCollection"),
              for(ctxt in context) {
                        w = if(inherits(ctxt, "SchemaTypes") || inherits(ctxt, "SchemaCollection")) {
 #                              cat("***** Calling resolve recursively for", obj, "with class", class(obj), "in ", class(ctxt), "\n")
-                               resolve(obj, ctxt, ctxt@namespaceDefs, recursive = FALSE, raiseError = FALSE, xrefInfo)  #XXX was namespaces
+                               resolve(obj, ctxt, ctxt@namespaceDefs, recursive = FALSE, raiseError = FALSE, xrefInfo, depth = depth + 1L, work = work, ...)  #XXX was namespaces
                           } else if(obj %in% names(ctxt))
                                ctxt[[obj]]
                           else
@@ -294,7 +354,7 @@ setMethod("resolve", c("character", "SchemaCollection"),
 
              if(recursive) {
 #                   cat("[recursive] Calling resolve recursively for", obj, "with class", class(val), "in", class(context), "\n")
-    	        resolve(val, context, namespaces, recursive, raiseError, xrefInfo)
+    	        resolve(val, context, namespaces, recursive, raiseError, xrefInfo, depth = depth + 1L, work = work, ...)
               }
              else
                  val
@@ -304,21 +364,21 @@ setMethod("resolve", c("character", "SchemaCollection"),
 asQName = function(x) strsplit(x, ":")[[1]]
 
 setMethod("resolve", c("AnySchemaType", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) {
              obj
            })
 
 setMethod("resolve", c("SimpleSequenceType", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) {
 #if(obj@name == "iType") browser()             
-              obj@elType = resolve(obj@elType, context, namespaces, recursive, raiseError, xrefInfo = xrefInfo, type, ...)
+              obj@elType = resolve(obj@elType, context, namespaces, recursive, raiseError, xrefInfo = xrefInfo, type, depth = depth + 1L, work = work, ...)
               obj
             })
 
 
 
 setMethod("resolve", c("SchemaType", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) {
                #XXX deal with the namespace.
                #!!! This will cause infinite recursion if there is no method for the specific type.
                # So now match the namespace....
@@ -328,7 +388,7 @@ setMethod("resolve", c("SchemaType", "SchemaCollection"),
                 if(identical(val, obj))
                   return(val)
 
-                return(resolve(val, context, namespaces, recursive, raiseError, xrefInfo, type, ...))
+                return(resolve(val, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...))
               } else {
 
               }
@@ -336,29 +396,29 @@ setMethod("resolve", c("SchemaType", "SchemaCollection"),
               stop("problem")
 
 
-              resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, ...)
+              resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
            })
 
 setMethod("resolve", c("SchemaType", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
                #XXX deal with the namespace. 
-              resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, ...)
+              resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
             })
 
 setMethod("resolve", c("EnumValuesDef", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
              obj
             })
 
 setMethod("resolve", c("RestrictedSetInteger", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
              obj
             })
 
 
 
 
-.tmp <- function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+.tmp <- function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L,  work = NULL, ...) {
 #if(obj == "StringArray") browser()
 
               if(length(context) == 0) {
@@ -394,7 +454,7 @@ setMethod("resolve", c("RestrictedSetInteger", "list"),
                  is.schema = sapply(context, is, "SchemaTypes")
                  if(any(is.schema)) {
 #                   cat("SchemaTypes in c('character', 'list')\n")
-                    tmp = lapply(context[is.schema], function(x) resolve(obj, x, recursive = recursive, raiseError = FALSE, xrefInfo = xrefInfo, type, ...))
+                    tmp = lapply(context[is.schema], function(x) resolve(obj, x, recursive = recursive, raiseError = FALSE, xrefInfo = xrefInfo, type, depth = depth + 1L, ...))
                     i = sapply(tmp, is.null)
                     if(!all(i))
                       return(tmp[!i][[1]])
@@ -437,7 +497,7 @@ setMethod("resolve", c("RestrictedSetInteger", "list"),
               
                if(recursive && (is(ans, "ClassDefinition") || !is(ans, "TerminalSchemaType"))) {
 #                  cat("Calling resolve recursively for", obj, "with", class(ans), "\n")
-                  ans = resolve(ans, context, namespaces, recursive, raiseError, xrefInfo, type, ...)
+                  ans = resolve(ans, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
                 }
 
                ans
@@ -448,22 +508,22 @@ setMethod("resolve", c("character", "SchemaTypes"), .tmp)
 
 
 setMethod("resolve", c("SimpleElement", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) {
              ans = new("Element")
 #             ans = obj
              if(length(obj@type))
-                ans@type = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type, ...)
-             ans@attributes = lapply(ans@attributes, resolve, context, namespaces, recursive, raiseError, xrefInfo, ...)
+                ans@type = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
+             ans@attributes = lapply(ans@attributes, resolve, context, namespaces, recursive, raiseError, xrefInfo, depth = depth + 1L, work = work, ...)
              #ans@default = obj@default
              ans             
            })
 
 
 setMethod("resolve", c("Element", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
 
 #XXX temporary test
-    obj@type = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type = notElementFun, ...)
+    obj@type = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type = notElementFun, depth = depth + 1L, work = work, ...)
     if(is(obj@type, "Element")) {
       obj@type@default = optionalDefaultValue(obj@type, obj@default)
       return(obj@type)
@@ -483,7 +543,7 @@ setMethod("resolve", c("Element", "list"),
                      ans
 
              if(recursive && is(ans, "SchemaTypeReference"))
-                ans = resolve(ans, context, namespaces, recursive, raiseError, xrefInfo, type, ...)
+                ans = resolve(ans, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
              #ans
              obj@type = ans
              obj
@@ -492,8 +552,8 @@ setMethod("resolve", c("Element", "list"),
 
 
 setMethod("resolve", c("LocalElement", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
-              tmp = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type, ...)
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
+              tmp = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
               obj@type = tmp
               if(!length(obj@type@default))
                   obj@type@default = obj@default
@@ -502,7 +562,7 @@ setMethod("resolve", c("LocalElement", "list"),
 
 
 setMethod("resolve", c("RestrictedStringDefinition", "list"), #XXX was list
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
              obj
            })
 
