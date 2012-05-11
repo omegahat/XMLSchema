@@ -686,9 +686,14 @@ orig = i
        if(extendList) 
             baseClass = unique(c("list", baseClass))
 #XXXrepn
-if(name %in% c("ObjectType", "FeatureType", "NetworkLinkType")) browser()
-       prot = if(opts@makePrototype) makePrototype(repn, i@slotTypes, baseClass, i@name, defaultValues) else NULL     
-       def = setClass(name, representation = repn, where = where, contains = baseClass, prototype = prot)
+#if(name %in% c("ObjectType", "FeatureType", "NetworkLinkType")) browser()
+       prot = if(opts@makePrototype) makePrototype(repn, i@slotTypes, baseClass, i@name, defaultValues) else NULL
+def <- tryCatch( setClass(name, representation = c(repn, baseClass), where = where, prototype = prot),
+                  error = function(e) {
+                       prot = if(opts@makePrototype) makePrototype(repn, i@slotTypes, "list", i@name, defaultValues) else NULL
+                       setClass(name, representation = c(repn, baseClass), where = where, prototype = prot)
+                    })
+#       def = setClass(name, representation = repn, where = where, contains = baseClass, prototype = prot)
 
        if(is(i, "CompositeTypeDefinition"))
              createListCoercion(name, repn, where = where)
@@ -1192,14 +1197,17 @@ function(repn, slots, base = NA, className = NA, defaults = NULL)
         # if there are some elements of repn that are not degenerate, then
         # create the prototypes from those and be done.
    if(!all(nas)) {
-       values =  mapply(coerceValue, defaults[!nas], repn[!nas], SIMPLIFY = FALSE) # base %in% PrimitiveRClassNames
+       values =  mapply(coerceValue, defaults[!nas], repn[!nas], SIMPLIFY = FALSE)
       # values[ names(str)[str & nas] ] = ""
 # return(values)
           # need to specify a default for the base type for 
        if(base %in% PrimitiveRClassNames)
            values = c(vector(base), values)
-       else if(base == "list")
-           values = c(list(), values)            
+       else if(base == "list") {
+           tmp  = list(list())
+           tmp[names(values) ] = values
+           values = tmp
+       }
        ans = do.call(prototype, values)
        #ans = prototype(values)
        return(ans)
