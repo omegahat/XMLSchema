@@ -4,11 +4,21 @@
 	 xmlns:xml="http://www.w3.org/XML/1998/namespace">
 <topic>
 <title>General</title>
-
 <items>
 <!-- Invoke with 
        "open -a /Applications/Google\ Chrome.app Todo.xml - -args - -allow-file-access-from-files" 
   You have to join the "- -" into -\-. They are here in a comment  -->
+
+
+
+<item status="high">
+Ensure the minOccurs is being processed for Element, e.g.
+egquery.xsd and the ERROR in eGQueryResultType.
+See <ulink url="#eGQueryResultType">below</ulink> for example code.
+</item>
+<item>
+Validity on SimpleSequenceType
+</item>
 
 
 <item status="done">
@@ -330,10 +340,25 @@ The problem is that there is no type attribute.
 The type is given as a child of the <xml:tag>attribute</xml:tag>.
 </item>
 
-<item status="high">
+<item status="high" id="eGQueryResultType">
 In processing egquery.xsd, eGQueryResultType doesn't recognize
 the maxOccurs for the slot named ResultItem (with @type ResultItemType) and so just has one rather than a list
 of them.
+<br/>
+<r:code>
+library(XMLSchema); sch = readSchema("inst/samples/egquery.xsd")
+defineClasses(sch, force = TRUE)
+doc = xmlParse("~/Books/XMLTechnologies/XMLSchema/egqueryResult.xml")
+as(xmlRoot(doc)[[2]], "eGQueryResultType")
+</r:code>
+<br/>
+Getting closer, but a) need validity on ResultItem class, 
+b) give it a better name to suggest a list,
+c) make conversion suck up the items, not just the first one.
+<br/>
+Now we have the LocalElement object and the count. So we need to turn this into a 
+SimpleSequenceType or a RestrictedListType and force the definition.
+createClassRepresentation also needs to know about this.
 <br/>
 In the call to defClass, we end up with
 <r:code>

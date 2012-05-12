@@ -558,12 +558,17 @@ orig = obj
 
 
 setMethod("resolve", c("LocalElement", "list"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
-              tmp = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE,
+                         xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...)
+           {
+              tmp = resolve(obj@type, context, namespaces, recursive, raiseError,
+                             xrefInfo, type, depth = depth + 1L, work = work, ...)
               obj@type = tmp
               if(!length(obj@type@default))
                   obj@type@default = obj@default
-              obj
+
+
+               sequenceOrAsIs( obj )
            })
 
 

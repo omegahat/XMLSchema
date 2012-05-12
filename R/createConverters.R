@@ -86,10 +86,24 @@ setGeneric("genSlotFromConverterCode",
 
     # Note that if we know the elements have to come in a particular order
     # we can index them by number.
+
+setMethod("genSlotFromConverterCode", "SimpleSequenceType",
+   function(elType, id, allowMissingNodes = FALSE, ...) {
+
+     e = quote(obj@id <- new(type, lapply(from[names(from) == name], as, type)))
+     e[[2]][[3]] = id
+     e[[3]][[3]][[2]][[3]][[3]] = elType@elementType # elType@elType@name
+browser()     
+     e[[3]][[3]][[4]] = elType@elType@name
+     e[[3]][[2]] = elType@name
+     
+     e
+   })
+
 setMethod("genSlotFromConverterCode", "ANY",
    function(elType, id, allowMissingNodes = FALSE, ...)
    {
-if(id == "LookAt") browser()
+if(id == "ResultItem") browser()
 
       orig = elType
       isElement = is(elType, "Element")

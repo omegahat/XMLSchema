@@ -292,7 +292,13 @@ setMethod("defClass", "Element",
                    baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
                    ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
-            defClass(i@type, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, name, ignorePending, opts)
+browser()
+            if(length(i@count) && Inf %in% i@count) {
+               tmp = makeSimpleSequence(i)
+
+               defClass(tmp, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, name, ignorePending, opts)
+            } else
+               defClass(i@type, where, namespaceDefs, verbose, pending, classes, types, baseClass, force, name, ignorePending, opts)
       })
 
 setMethod("defClass", "ANY",
@@ -316,6 +322,7 @@ setMethod("defClass", "ANY",
 
 if(showDefClassTrace)
   print(sys.calls())
+
 
  
          if(is(i, "XMLAbstractNode") || is.null(i)) {
@@ -363,7 +370,9 @@ if(showDefClassTrace)
            body(fun)[[4]] = name    # b
            environment(fun) = globalenv()
            setAs("numeric", name, fun, where = where)
-           setAs("character", name, fun, where = where)           
+           setAs("character", name, fun, where = where)
+           
+           def
 
          } else if(is(i, "EnumValuesDef")) {
 
@@ -609,8 +618,11 @@ function(i, types, namespaceDefs, name, classes, pending, baseClass, where = glo
           verbose = FALSE, force = FALSE, extendList = FALSE, opts = new("CodeGenOpts"))
 {
 orig = i
-  
+if(i@name == 'eGQueryResultType') browser()
+
      i@slotTypes = lapply(i@slotTypes, resolve, types, namespaceDefs)
+#!!!!
+#     i@slotTypes = lapply(i@slotTypes, sequenceOrAsIs)
 
          # Handle any SchemaGroupType and make certain those classes are defined and then
          # use them as base classes to extend and remove from the slotTypes.
@@ -977,10 +989,9 @@ function(type, types, name = NA, where = globalenv(), parentClass = BaseClassNam
 
 
   if(is(el, "UnionDefinition") || is(el, "ClassDefinition")) {
-    #XXX make the validity method.
-#   valid = function(object)
-#               all(sapply(obj, is, ))
-#   setValidity(ans, valid, where = where)
+ browser()
+     valid = makeListValidityFun(, type@elType@Rname)
+     setValidity(name, valid, where = where)
   }
 
   ans
@@ -1338,19 +1349,27 @@ function(i, where = globalenv(),
     #XXX Get the base type based on the type of the element restriction.
       def = setClass(i@name, contains = i@baseType, where = where)
 
+      valid = makeListValidityFun(i)
+      setValidity(i@name, valid, where = where)
+   
+      def
+  })
+
+makeListValidityFun =
+function(i, typeName = i@elType@Rname)
+{
       valid = function(object) {
                  if(!all(sapply(object, is, elName)))
                     stop("not all elements are of type ", elName)
                  else
                    TRUE
               }
-      body(valid)[[2]][[2]][[2]][[2]][[4]] = i@elType@Rname
-      body(valid)[[2]][[3]][[3]] = i@elType@Rname      
-
-      setValidity(i@name, valid, where = where)
-   
-      def
-  })
+      
+      body(valid)[[2]][[2]][[2]][[2]][[4]] = typeName
+      body(valid)[[2]][[3]][[3]] = typeName
+      
+      valid
+}
 
 
 
@@ -1427,4 +1446,25 @@ function(val, to)
      as(as(val, "integer"), "logical")
   else
      as(val, to)
+}
+
+sequenceOrAsIs =
+function(x)
+{
+  if(is(x, "Element") && length(x@count) && max(x@count) > 1) # Inf %in% x@count)
+    makeSimpleSequence(x)
+  else
+    x
+}
+
+makeSimpleSequence =
+function(type)
+{
+  new("SimpleSequenceType", name = sprintf("ListOf%s", type@name), count = type@count,
+                            elementType = type@name,
+                            elType = type@type)
+
+# new("RestrictedListType", name = sprintf("ListOf%s", type@name), count = type@count,
+#                           elementType = type@name,
+#                           elType = type@type, baseType = "list")  
 }
