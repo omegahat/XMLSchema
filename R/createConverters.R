@@ -314,18 +314,26 @@ setMethod("createFromXMLConverter", "UnionDefinition",
 
 # Recognize the primitive types.
 
-# See createArrayClass in genCode.R  Compute builtinClass and elName there.
 setMethod("createFromXMLConverter",
            "SimpleSequenceType",
             function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
-                 fun = function(from)
-                   xmlSApply(from, as, "x")
-               #  if(builtinClass == "list")
-               #      body(fun)[[1]] = as.name("xmlApply")
-              body(fun)[[4]] = if(!is.na(which)) builtinClass else elName
-#  environment(fun) = DefaultFunctionNamespace
-  fun
-})
+              # was      type@fromConverter
+              makeSequenceXMLConverter("list",  type@elType@Rname)
+           })
+
+# See createArrayClass in genCode.R  Compute builtinClass and elName there.
+makeSequenceXMLConverter =
+function(builtinClass, elName)
+{
+   fun = function(from)
+            xmlSApply(from, as, "x")
+   if(builtinClass == "list")
+        body(fun)[[1]] = as.name("xmlApply")
+
+   body(fun)[[4]] = elName # if(!is.na(which)) builtinClass else elName
+   environment(fun) = globalenv()
+   fun
+}
 
 setMethod("createFromXMLConverter",
            "SchemaGroupType",
@@ -428,11 +436,6 @@ setAs("character", "XMLTypeConverter",
   })
 
 
-setMethod("createFromXMLConverter",
-           "SimpleSequenceType",
-            function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
-              type@fromConverter
-            })
 
 
 setMethod("createFromXMLConverter", "SchemaComplexType",

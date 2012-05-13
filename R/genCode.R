@@ -608,8 +608,12 @@ setMethod("getDefaultValue", "ClassDefinition",
             function(type, ...) {
                 NULL
             })
-setMethod("getDefaultValue", "LocalElement", 
+
+setMethod("getDefaultValue", "Element", 
             function(type, ...) {
+              if(length(type@default))
+                type@default
+              else
                 getDefaultValue(type@type)
             })
 
@@ -618,7 +622,7 @@ function(i, types, namespaceDefs, name, classes, pending, baseClass, where = glo
           verbose = FALSE, force = FALSE, extendList = FALSE, opts = new("CodeGenOpts"))
 {
 orig = i
-if(i@name == 'eGQueryResultType') browser()
+if(i@name %in% 'LatLonBoxType') browser()
 
      i@slotTypes = lapply(i@slotTypes, resolve, types, namespaceDefs)
 #!!!!
@@ -638,8 +642,7 @@ if(i@name == 'eGQueryResultType') browser()
 
     defaultValues = lapply(i@slotTypes, getDefaultValue)
 
-
-     if(is(i, "ExtendedClassDefinition") && length(i@slotTypes) == 1 && is(i@slotTypes[[1]], "SimpleSequenceType"))  {
+    if(is(i, "ExtendedClassDefinition") && length(i@slotTypes) == 1 && is(i@slotTypes[[1]], "SimpleSequenceType"))  {
              # This is the  case where the extended class is just a sequence and so we want to extend list
              # AND the regular base class in that order. 
           extendList = TRUE
@@ -975,22 +978,16 @@ function(type, types, name = NA, where = globalenv(), parentClass = BaseClassNam
 
   
 #XXX
+# Merge into 
 #  createFromXMLConverter(, types = types)
-   fun = function(from)
-            xmlSApply(from, as, "x")
-   if(builtinClass == "list")
-        body(fun)[[1]] = as.name("xmlApply")
-   body(fun)[[4]] = if(!is.na(which)) builtinClass else elName
-   environment(fun) = DefaultFunctionNamespace
+   fun = makeSequenceXMLConverter(builtinClass, elName)
    setAs("XMLAbstractNode", name, fun, where = where)
 
   if(builtinClass %in% RPrimitiveTypes) 
      createVectorCoercions(name, builtinClass, where)
 
-
   if(is(el, "UnionDefinition") || is(el, "ClassDefinition")) {
- browser()
-     valid = makeListValidityFun(, type@elType@Rname)
+     valid = makeListValidityFun(, type@elType@Rname, type@count)
      setValidity(name, valid, where = where)
   }
 
@@ -1356,7 +1353,7 @@ function(i, where = globalenv(),
   })
 
 makeListValidityFun =
-function(i, typeName = i@elType@Rname)
+function(i, typeName = i@elType@Rname, count = numeric(0))
 {
       valid = function(object) {
                  if(!all(sapply(object, is, elName)))
@@ -1367,6 +1364,20 @@ function(i, typeName = i@elType@Rname)
       
       body(valid)[[2]][[2]][[2]][[2]][[4]] = typeName
       body(valid)[[2]][[3]][[3]] = typeName
+
+      
+      if(length(count) && (count != c(0, Inf))) {
+
+        if(max(count) == Inf)
+           e = substitute(if(length(object) < min) "too few elements" else TRUE, list(min = count[1]))
+        else
+           e = substitute(if(length(object) < min || length(object) > max)
+                                             "incorrect number of elements"
+                                         else
+                                             TRUE, list(min = count[1], max = count[2]))
+
+         body(valid)[[2]][[4]] = e
+      }
       
       valid
 }

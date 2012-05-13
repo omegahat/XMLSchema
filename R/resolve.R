@@ -19,6 +19,11 @@ DefaultPending = list(names = character(), types = list())
 setGeneric("resolve", function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
                                 type = NA, depth = 1L, work = NULL,  ...)
                       {
+
+                        ans = NULL
+                        if(depth > 100)
+                          stop("Probably infinite recursion. Stopping the resolve() call.")
+                        
                         if(FALSE) #XXXX Temporary turn off May 5th 2012
                             obj = findSelfRefs(obj)
 
@@ -26,18 +31,25 @@ setGeneric("resolve", function(obj, context, namespaces = character(), recursive
                           work = list(pending = new.env(), resolved = new.env())
                         
                         if(!is.null(work)) {
-                          id = sprintf("%s:%s:%s", class(obj), getName(obj), class(context))
-                          if(exists(id, work$pending, inherits = FALSE)) {
-#                            cat("looking for", id, "and it is in pending, depth = ", depth, "\n")
+                          id.name = if(is(obj, "GenericSchemaType") && !is.na(obj@name)) obj@name else "?"
+                          id = sprintf("%s:%s:%s:%s", id.name, class(obj), getName(obj), class(context))
+                          if(exists(id, work$pending, inherits = FALSE) && id.name != "?") {
+                             cat("looking for", id, "and it is in pending, depth = ", depth, "\n")
 #                            browser()
                           }
-                          if(exists(id, work$resolved))
-                             return(get(id, work$resolved))
+
+                          #XXX Activating this causes an element with a different name to be returned for something with the
+                          # same structure, i.e. class & type. e.g. slots in LatLonBoxType in kml21.xsd
+#                          if(exists(id, work$resolved))
+#                             return(get(id, work$resolved))
                           
                           assign(id, obj, work$pending)
-                          on.exit({remove(list = id, envir = work$pending)
+                          on.exit({ if(exists(id, work$pending, inherits = FALSE))
+                                        remove(list = id, envir = work$pending)
 #                                   cat("finished resolving", id, "\n")
-                                   assign(id, ans, work$resolved)})
+                                   if(!is.null(ans))
+                                      assign(id, ans, work$resolved)
+                                  })
                         }
                        
                        if(is.null(xrefInfo) && is(context, "SchemaCollection"))
@@ -133,7 +145,7 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
              }
                 
              ans = resolve(obj@name, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
-             ans@default =  optionalDefaultValue(ans, obj@default)
+             ans@default = optionalDefaultValue(ans, obj@default)
              ans
            })
 }
@@ -241,10 +253,12 @@ setMethod("resolve", c("UnionDefinition", "SchemaCollection"),
            })
 
 setMethod("resolve", c("ClassDefinition", "SchemaCollection"),
-           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
+                     type = NULL, depth = 1L, work = NULL,  ...) {
 
              obj@isAttribute = as.logical(sapply(obj@slotTypes, is, "AttributeDef"))
-             obj@slotTypes = lapply(obj@slotTypes, resolve, context, namespaces, recursive, raiseError, xrefInfo, depth = depth + 1L, work = work, ...)
+             obj@slotTypes = lapply(obj@slotTypes, resolve, context, namespaces, recursive,
+                                                      raiseError, xrefInfo, depth = depth + 1L, work = work, ...)
 
             
          # This can go but is an experiment  to reduce/simplify the type
@@ -566,7 +580,6 @@ setMethod("resolve", c("LocalElement", "list"),
               obj@type = tmp
               if(!length(obj@type@default))
                   obj@type@default = obj@default
-
 
                sequenceOrAsIs( obj )
            })

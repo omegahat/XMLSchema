@@ -131,8 +131,6 @@ ClassDef =
 function(name, slotTypes, uris = as.character(rep(NA, length(slotTypes))),
           obj = new("ClassDefinition"), targetNamespace = NA, elementFormDefault = NA, documentation = character())
 {
-#if(name == "AbstractObjectType") browser()
-
   obj@name = name
 
   if(length(obj@Rname) == 0)

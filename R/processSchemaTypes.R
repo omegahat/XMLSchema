@@ -313,7 +313,7 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
           if(is(el, "EnumValuesDef"))  # And is a string
               def@elements = el@values
        } else if(xmlName(type) == "simpleType" && xmlName(type[[1]]) == "list"){
-           def = processSimpleList(type[[1]],  xmlGetAttr(type, "name", as.character(NA)), namespaceDefs)
+           def = processSimpleList(type[[1]],  xmlGetAttr(type, "name", as.character(NA)), namespaceDefs, targetNamespace)
        } else
            stop("Not sure what to do here with ", xmlName(type))
 
@@ -414,6 +414,10 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
      stypes = lapply(kids, processSchemaType, types, substitutionGroups, namespaceDefs = namespaceDefs,
                                               targetNamespace = targetNamespace,
                                               elementFormDefault = elementFormDefault, localElements = TRUE)
+
+     if(length(name) == 0 || is.na(name))
+        name = xmlGetAttr(xmlParent(type), "name")
+     
      ClassDef(name, stypes, targetNamespace = targetNamespace, documentation = docString)
 #     new("ClassDefinition", name = name, Rname = name, slotTypes = stypes, documentation = docString,
 #                     isAttribute = rep(TRUE, length(stypes)), nsuri = targetNamespace)
@@ -590,8 +594,11 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
 
         
         name = xmlGetAttr(type, "name")
-           # used to define the class here directly with new("ClassDefinition")
-        def = ClassDef(name, slotTypes = structure(els, names = xmlSApply(type, xmlGetAttr, "name")),
+        if(length(name) == 0 || is.na(name))
+            name = xmlGetAttr(xmlParent(type), "name")
+        
+           # we used to define the class here directly with new("ClassDefinition")
+        def = ClassDef(name, slotTypes = structure(els, names = sapply(els, slot, "name")), # names = xmlSApply(type, xmlGetAttr, "name")),
                          documentation = docString, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault,
                          uris = targetNamespace)        
      #   def = new("SchemaComplexType", name = name, attributes = els)

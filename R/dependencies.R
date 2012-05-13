@@ -4,6 +4,8 @@ findTypeLoops =
   #  when A is defined as having an element of type B
   #  and B is defined as having an element of type A.
   #
+  # What about A referring to A?
+  #
   # This only finds direct cross-references, not via intermediate
   # classes.  We might implement this in the future.
   #
@@ -46,6 +48,8 @@ mapply(function(id, d) g[id, d] <<- g[id, d] + 1, names(elOf), elOf)
     xloops
 }
 
+SchemaNSDefs = c("xs" = "http://www.w3.org/2001/XMLSchema", wsdl = "http://schemas.xmlsoap.org/wsdl/" )
+
 directDependencies =
   #
   #  For all the top-level elements in any of the <schema> nodes, 
@@ -57,37 +61,68 @@ function(doc, namespaces = XMLSchema:::gatherNamespaceDefs(its[[1]]),
 {
    q = "//xs:schema/*[not(local-name() = 'schema') and not(local-name() = 'annotation')] | //wsdl:types/*[not(local-name() = 'schema') and not(local-name() = 'annotation')]"
    
-   its  = getNodeSet(doc, q, c("xs" = "http://www.w3.org/2001/XMLSchema", wsdl = "http://schemas.xmlsoap.org/wsdl/" ))
+   its  = getNodeSet(doc, q, SchemaNSDefs)
 #  if(is(doc, "XMLInternalElementNode") && xmlName(doc) == "types") {
 #      # handle the case there are type definitions in <types> ...</types> in a
 #  }
 
-   names(its) = sapply(its, xmlGetAttr, "name")
-   deps = lapply(its, function(x) xpathSApply(x, ".//xs:*[@type]", getSchemaNodeType, namespaces = c("xs" = "http://www.w3.org/2001/XMLSchema")))
+   if(is.null(namespaces))
+     namespaces = XMLSchema:::gatherNamespaceDefs(its[[1]])
 
+   names(its) = sapply(its, xmlGetAttr, "name")
+    # end up with a list with each element being a character string containing the names of the elements
+    # and the names of these elements the URI of the namespace in which they are defined.
+   deps = lapply(its, function(x) xpathSApply(x, ".//xs:*[@type or @ref]", getSchemaNodeType,
+                                               namespaces = SchemaNSDefs["xs"]))
+browser()
    nameURIs = mapply(function(node, id) mapName(id, namespaces, findTargetNamespace(node)),
                       its, names(its))
    names(nameURIs) = sub("^[^.]*\\.", "", names(nameURIs))
-   
-   deps = lapply(deps, function(x) {
-                         v = mapply(function(x, ns) {
-                                      mapName(x, namespaces, ns)
-                                    }, x, names(x))
-                         i = !duplicated(unlist(v))
-                         structure(unlist(v[i]), names = sapply(v[i], names))})
-   
+        # nameURIs is just a character vector of the names of the data type and the names
+        # on the vector are the namespace URIs.
+
+        # Now loop over each data type and look at its dependencies and map these
+# deps = lapply(deps, function(x) {
+#                       v = mapply(function(x, ns) {
+#                                    mapName(x, namespaces, ,ns)
+#                                  }, x, names(x))
+#                       i = !duplicated(unlist(v))
+#                       structure(unlist(v[i]), names = sapply(v[i], names))
+#                     })
+
+   deps = lapply(deps, getUniqueTypes)
+
+      # nameURIs
    list(dependencies = deps, nameURIs = nameURIs)
+}
+
+getUniqueTypes =
+function(x)
+{
+  i = !duplicated(sprintf("%s:%s", names(x), x))
+  x[i]
+}
+
+
+getSchemaRefNodeType =
+function(node)
+{
+  ref = xmlGetAttr(node, "ref")
+  els = getNodeSet(node, sprintf("//xs:*[name = %s]", ref), namespaces = SchemaNSDefs)
+  
 }
 
 getSchemaNodeType =
 function(node)
 {
-   type = xmlGetAttr(node, "type")
+   type = xmlGetAttr(node, "type", xmlGetAttr(node, "ref"))
+#   if(is.null(type))
+#     return(getSchemaRefNodeType(node))
    el = strsplit(type, ":")[[1]]
    if(length(el) == 1)
      el = c("", el)
    
-   ns = gatherNamespaceDefs(node)
+   ns = XMLSchema:::gatherNamespaceDefs(node)
    i = match(el[1], names(ns))
    if(FALSE && is.na(i)) {
       if(interactive())
@@ -96,7 +131,7 @@ function(node)
         stop("NA computed")
     }
 
-   structure(type, names = if(is.na(i)) "" else ns[[i]]$uri)
+   structure(el[2], names = if(is.na(i)) "" else ns[[i]]$uri)
 }
 
 mapName =
@@ -104,7 +139,7 @@ function(id, namespaces, localNs = NA, defaultNS = "")
 {
    els = strsplit(id, ":")[[1]]
    if(length(els) == 1) {
-     return(structure(id, names = defaultNS))
+     return(structure(id, names = localNs)) # was defaultNS
      els = c(defaultNS, els)
    }
 

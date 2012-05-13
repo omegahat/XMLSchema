@@ -9,15 +9,35 @@
        "open -a /Applications/Google\ Chrome.app Todo.xml - -args - -allow-file-access-from-files" 
   You have to join the "- -" into -\-. They are here in a comment  -->
 
+<item status="done">
+The default values for north, south, etc. are not being recognized.
+(Fixed now with getDefaultValue method for Element.)
+<br/>
+And the north slot is being repeated in place of the others.
+Problem in resolved generic where we used the work$resolved and that led to
+elements with the same class and type, but with different names returning the same.
+</item>
 
+<item status="done">
+Can't defineClasses() for kml21.xsd. 
+<r:error><![CDATA[
+Error in if (el@nsuri %in% getXSDSchemaURIs(all = TRUE) || (el@nsuri ==  : 
+  missing value where TRUE/FALSE needed
+]]></r:error>
+el@nsuri is character(0) for ListOfstate.
+This is for a RestrictedListType in createArrayClass.
+</item>
 
-<item status="high">
+<item status="done">
 Ensure the minOccurs is being processed for Element, e.g.
 egquery.xsd and the ERROR in eGQueryResultType.
 See <ulink url="#eGQueryResultType">below</ulink> for example code.
 </item>
-<item>
-Validity on SimpleSequenceType
+
+<item status="done">
+Validity on SimpleSequenceType.
+Done at least for SimpleSequenceType in makeListValidityFunction
+called from createArrayClass.
 </item>
 
 
@@ -340,7 +360,7 @@ The problem is that there is no type attribute.
 The type is given as a child of the <xml:tag>attribute</xml:tag>.
 </item>
 
-<item status="high" id="eGQueryResultType">
+<item status="check" id="eGQueryResultType">
 In processing egquery.xsd, eGQueryResultType doesn't recognize
 the maxOccurs for the slot named ResultItem (with @type ResultItemType) and so just has one rather than a list
 of them.
@@ -459,6 +479,7 @@ Map the SchemaComplexType in XMCDA to ClassDefinition types.
 
 <item>
 Implement method for createSOAPConverter for SimpleSequenceType.
+(See the code in createArrayClass and move that.)
  UnionDefinition (is this already done generically). 
 SchemaGroupType, SchemaComplexType.
 <br/>

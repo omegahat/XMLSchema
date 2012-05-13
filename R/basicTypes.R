@@ -355,14 +355,15 @@ function(name, elType, baseType)
 
 
 processSimpleList =
-function(type, name, namespaceDefs = NULL)
+function(type, name, namespaceDefs = NULL, targetNamespace = character())
 {
   type = xmlGetAttr(type, "itemType")
 
   elType = SchemaType(type, namespaceDefs = namespaceDefs)
   def = new("RestrictedListType", name = name, elType = elType, elementType = type)
   def@baseType = getListBaseType(elType)
-  def@fromConverter = getListTypeConverter(def@name, elType, def@baseType)  
+  def@fromConverter = getListTypeConverter(def@name, elType, def@baseType)
+  def@nsuri = targetNamespace
 
   def
 }
