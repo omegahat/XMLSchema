@@ -204,8 +204,13 @@ function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRU
   if(is.character(type)) {
     if(type %in% names(converters))
        return(converters[[type]](xmlValue(node)))
-    else
+    else {
+       type = strsplit(type, ":")[[1]]
+#XXXXXX fix      
+      if(length(type) > 1)
+        type = type[2]
       return(as(node, type))
+    }
   }
 
   
