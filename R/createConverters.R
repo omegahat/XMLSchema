@@ -93,7 +93,7 @@ setMethod("genSlotFromConverterCode", "SimpleSequenceType",
      e = quote(obj@id <- new(type, lapply(from[names(from) == name], as, type)))
      e[[2]][[3]] = id
      e[[3]][[3]][[2]][[3]][[3]] = elType@elementType # elType@elType@name
-browser()     
+
      e[[3]][[3]][[4]] = elType@elType@name
      e[[3]][[2]] = elType@name
      
@@ -318,21 +318,28 @@ setMethod("createFromXMLConverter",
            "SimpleSequenceType",
             function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
               # was      type@fromConverter
-              makeSequenceXMLConverter("list",  type@elType@Rname)
+
+                makeSequenceXMLConverter("list",  type@elType@Rname, type)
            })
 
 # See createArrayClass in genCode.R  Compute builtinClass and elName there.
 makeSequenceXMLConverter =
-function(builtinClass, elName)
+function(builtinClass, elName, type)
 {
+
+  if(is(type@elType, "SchemaStringType")) {
+    fun = function(from)
+              getChildrenStrings(from)
+  } else  {
    fun = function(from)
             xmlSApply(from, as, "x")
    if(builtinClass == "list")
         body(fun)[[1]] = as.name("xmlApply")
 
    body(fun)[[4]] = elName # if(!is.na(which)) builtinClass else elName
-   environment(fun) = globalenv()
-   fun
+ }
+ environment(fun) = globalenv()
+ fun
 }
 
 setMethod("createFromXMLConverter",
@@ -366,6 +373,7 @@ setMethod("createFromXMLConverter",
               # Attributes, including conversion to numbers, enums, etc.
               # For sequences with an unknown number of elements, have to put them into a list.
               # They won't have names.
+              body = character()
              if(is(type@type, "ClassDefinition")) {
                elNames = names(type@type@slotTypes)
                types = type@type@slotTypes

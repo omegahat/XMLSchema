@@ -85,7 +85,7 @@ setClass("SelfRef", contains = "SchemaType")
 # The following are for types that involve recursive cross-references.
 # The CrossRefType is for representing a SOAP/XMLSchema type.
 # The CrossRefClass is for defining a class corresponding to a CrossRefType induced in an XMLSchema
-setClass("CrossRefType", representation(subclasses = "character"), contains = "GenericSchemaType")
+setClass("CrossRefType", representation(subclasses = "character"), contains = "SchemaType")
 setClass("CrossRefClass")
 
 
@@ -100,7 +100,7 @@ setClass("AnySchemaType", contains = "SchemaType",
 
 
 setClass("SchemaVoidType", representation("SchemaType"),
-            prototype = list(name = "null", ns = "xsi"))
+            prototype = list(name = "null", ns = "xsi", Rname = "NULL"))
 
 setClass("SchemaTypeReference", representation("SchemaType"))
 setClass("AttributeGroupReference", contains = "SchemaTypeReference")
@@ -122,6 +122,13 @@ setClass("SchemaComplexType",
 
 #XXX Is this a setClassUnion ?
 setClass("PrimitiveSchemaType", contains = c("BasicSchemaType", "TerminalSchemaType"))
+
+setClass("SchemaIntType", contains = "PrimitiveSchemaType",
+                 prototype = list(name = "int", Rname = "integer"))
+setClass("SchemaDoubleType", contains = "PrimitiveSchemaType",
+                 prototype = list(name = "double", Rname = "numeric"))
+setClass("SchemaFloatType", contains = "PrimitiveSchemaType",
+                 prototype = list(name = "float", Rname = "numeric"))
 
 setClass("SchemaStringType", contains = "PrimitiveSchemaType",
            prototype = list(name = "string", # Rname = "string",

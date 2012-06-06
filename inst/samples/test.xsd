@@ -1,0 +1,28 @@
+<xs:schema 
+    targetNamespace="http://www.omegahat.org"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+    elementFormDefault="qualified">
+
+    <xs:complexType name="seq">
+        <xs:sequence>
+            <xs:element name="ERROR" type="xs:string" minOccurs="0"/>
+            <xs:element name="Item" type="ItemType" minOccurs="3" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="seq1">
+        <xs:element name="ERROR" type="xs:string" minOccurs="0"/>
+        <xs:sequence>
+            <xs:element name="Item" type="tns:ItemType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+   <xs:complexType name="ItemType">
+   <xs:sequence>
+     <xs:element name="i" type="xs:integer"/>
+     <xs:element name="l" type="xs:logical"/>
+     <xs:element name="s" type="xs:string"/>
+     <xs:element name="d" type="xs:dateTime"/>
+   </xs:sequence>
+   </xs:complexType>
+</xs:schema>

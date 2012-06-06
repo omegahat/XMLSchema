@@ -292,7 +292,7 @@ setMethod("defClass", "Element",
                    baseClass = BaseClassName, force = FALSE,
                    name = getName(i),
                    ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
-browser()
+#browser()
             if(length(i@count) && Inf %in% i@count) {
                tmp = makeSimpleSequence(i)
 
@@ -348,9 +348,10 @@ if(showDefClassTrace)
 
             valid = function(object) {
                values = ""
-               if(!any(object == values))
-                  stop(object, " is not a recognized value ", paste(sQuote(values), collapse = ', '))
-               TRUE
+               if(any(i <- !is.na(object)) && !any(object[i] == values))
+                  paste("some values are not a recognized value in ", paste(sQuote(values), collapse = ', '))
+               else
+                  TRUE
             }
             body(valid)[[2]][[3]] = i@values
             def = setClass(name, contains = "string", validity = valid, where = where)
@@ -980,7 +981,7 @@ function(type, types, name = NA, where = globalenv(), parentClass = BaseClassNam
 #XXX
 # Merge into 
 #  createFromXMLConverter(, types = types)
-   fun = makeSequenceXMLConverter(builtinClass, elName)
+   fun = makeSequenceXMLConverter(builtinClass, elName, type)
    setAs("XMLAbstractNode", name, fun, where = where)
 
   if(builtinClass %in% RPrimitiveTypes) 
@@ -1136,7 +1137,10 @@ if(FALSE) {
 asIntegerSetValue =
 function(val, values, className)
 {
-   val = as.integer(val)  
+   val = as.integer(val)
+   if(is.na(val))
+     val
+   
    if(is.na(match(val, values)))
      stop("invalid integer value for class ", className)
 

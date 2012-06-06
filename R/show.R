@@ -19,14 +19,15 @@ setMethod("show", "Element",
 
 setMethod("show", "SchemaTypeReference",
            function(object) {
-              cat("-> ", object@type@name, " (reference)\n", sep = "")
+              cat("-> ", object@name, "(", object@nsuri, ") (reference)\n", sep = "")
            })
 
 
 
 setMethod("show", "AttributeDef",
            function(object) {
-              cat("@", object@name, "\n", sep = "")
+              cat("@", object@name, if(!is.null(object@type)) c(" ", object@type@name),
+                   "\n", sep = "")
            })
 
 setGeneric("getShowMessage", function(object) standardGeneric("getShowMessage"))

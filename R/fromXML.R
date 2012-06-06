@@ -59,7 +59,7 @@ setMethod("fromXML", c("XMLInternalElementNode", "missing", "missing", type = "m
  function(node, root = NULL, converters = SchemaPrimitiveConverters,
            append = TRUE, type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node))          
   {
-browser()
+#browser()
 
        k = xmlName(node)
        if(!is.null(getClassDef(k)))

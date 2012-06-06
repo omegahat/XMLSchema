@@ -84,3 +84,10 @@ export(asIntegerSetValue)
 
 exportClass("URI")
 
+export(computeOrder)
+export(defClass)
+exportMethods(defClass)
+
+exportClasses(SchemaStringType, SchemaIntType, SchemaDoubleType, SchemaFloatType)
+exportClass(string)
+

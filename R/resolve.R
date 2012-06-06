@@ -20,6 +20,12 @@ setGeneric("resolve", function(obj, context, namespaces = character(), recursive
                                 type = NA, depth = 1L, work = NULL,  ...)
                       {
 
+                        if(is(obj, "AnyAttributeDef"))
+                          return(obj)
+
+                        if(is.null(obj))
+                           return(NULL)
+                        
                         ans = NULL
                         if(depth > 100)
                           stop("Probably infinite recursion. Stopping the resolve() call.")
@@ -527,10 +533,14 @@ setMethod("resolve", c("character", "SchemaTypes"), .tmp)
 setMethod("resolve", c("SimpleElement", "list"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) {
              ans = new("Element")
+             ans@name = obj@name ; ans@count = obj@count; ans@Rname = obj@Rname 
+             ans@nsuri = obj@nsuri; ans@ns = obj@ns; ans@default = obj@default
+             ans@documentation = obj@documentation
+             
 #             ans = obj
              if(length(obj@type))
                 ans@type = resolve(obj@type, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth + 1L, work = work, ...)
-             ans@attributes = lapply(ans@attributes, resolve, context, namespaces, recursive, raiseError, xrefInfo, depth = depth + 1L, work = work, ...)
+             ans@attributes = lapply(obj@attributes, resolve, context, namespaces, recursive, raiseError, xrefInfo, depth = depth + 1L, work = work, ...)
              #ans@default = obj@default
              ans             
            })

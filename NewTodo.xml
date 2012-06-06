@@ -10,6 +10,49 @@
   You have to join the "- -" into -\-. They are here in a comment  -->
 
 <item status="done">
+Does integer map to numeric?  See egquery_number.xsd. Should be int, not integer.
+<r:code>
+library(XMLSchema)
+sch = readSchema("inst/samples/egquery_number.xsd")
+defineClasses(sch)
+doc = xmlParse("~/Books/XMLTechnologies/XMLSchema/egqueryResult.xml")
+z = as(xmlRoot(doc), "Result")
+z@eGQueryResult@ResultItem[[1]]@Count
+class(z@eGQueryResult@ResultItem[[1]]@Count)
+</r:code>
+</item>
+
+<item status="done">
+For enumeration types, allow NAs.  Adjust the validity method
+<br/>
+Done for RestrictedStringType
+</item>
+
+<item>
+Constant in PMML-4-1.xsd.  Get the simpleContent part working.
+When defining class, we end up with "xs:string" in the call to getName().
+The SimpleElement  has this in its type.
+We need to map this in processSchemaTypes.
+</item>
+
+<item status="done">
+Converter for link in atom-author.xsd has the first expression as a function
+<r:code>
+library(XMLSchema); sch = readSchema("inst/samples/ogckml22.xsd")
+rl = resolve(sch[[2]]$link, sch)
+XMLSchema:::createFromXMLConverter(rl, types = sch)
+</r:code>
+<br/>
+We were picking up the body function.
+</item>
+
+<item status="low">
+Do we need SimpleElement. Can it be an Element, i.e. extend Element?
+The resolve method for SimpleElement is not filling in the information.
+link in ogckml22, or more specifically in sch[[2]]$link as part of the atom schema
+</item>
+
+<item status="done">
 The default values for north, south, etc. are not being recognized.
 (Fixed now with getDefaultValue method for Element.)
 <br/>

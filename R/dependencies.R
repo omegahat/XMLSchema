@@ -54,7 +54,9 @@ directDependencies =
   #
   #  For all the top-level elements in any of the <schema> nodes, 
   #  find which types are used within those types, i.e. the classes/types we will need
-  #  to define these. 
+  #  to define these.
+  #  For each of these types, put the URI of the namespace in/for which they are defined
+  #  so we can uniquely identify them if there are two types with the same name.
   #
 function(doc, namespaces = XMLSchema:::gatherNamespaceDefs(its[[1]]),
           targetNamespace = xmlGetAttr(xmlRoot(doc), "targetNamespace")) # have to worry about nested schema
@@ -74,7 +76,7 @@ function(doc, namespaces = XMLSchema:::gatherNamespaceDefs(its[[1]]),
     # and the names of these elements the URI of the namespace in which they are defined.
    deps = lapply(its, function(x) xpathSApply(x, ".//xs:*[@type or @ref]", getSchemaNodeType,
                                                namespaces = SchemaNSDefs["xs"]))
-browser()
+
    nameURIs = mapply(function(node, id) mapName(id, namespaces, findTargetNamespace(node)),
                       its, names(its))
    names(nameURIs) = sub("^[^.]*\\.", "", names(nameURIs))
@@ -160,8 +162,9 @@ makeCrossRefType =
 function(els, namespaceDefs = NULL)
 {
   els = structure(gsub(".*:(.*)", "\\1", els), names = gsub("(.*):.*", "\\1", els))
+  ns = names(els)
   id = paste(els, collapse = ".")
-  new("CrossRefType", name = id, subclasses = els)                                        
+  new("CrossRefType", name = id, subclasses = els, nsuri = ns)
 }
 
 

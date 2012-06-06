@@ -208,8 +208,12 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
       namespaceDefs[ names(nsDefs) ] = nsDefs
 
 
-# if(length(name) && !is.na(name)  && name == "alternatives") browser()
+# if(length(name) && !is.na(name)  && name == "GetDatabases") browser()
 #if(length(name)   && !is.na(name) && name == "office-of-filingType") {debug(processSequence); on.exit(undebug(processSequence))}
+# if(length(name) && !is.na(name)  && name == "Constant") browser()
+
+   if(xmlName(type) == "complexType" && xmlSize(type) == 0)
+       return(new("SchemaVoidType"))
   
    if(xmlName(type) == "attribute")
      return(processAttribute(type, name, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE, types = types))
@@ -339,14 +343,16 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
      }
   }
 
-   if("complexType" %in% names(type) && xmlSize(type[["complexType"]])  == 0) {
+   if("complexType" %in% names(type) && xmlSize(type[["complexType"]]) == 0) {
      return(new("Element", name = name, attributes = lapply(xmlChildren(type)[names(type) == "attribute"],
                                                             processAttribute,
                                                             types = types,
                                                             namespaceDefs = namespaceDefs,
                                                             targetNamespace = targetNamespace,
                                                             elementFormDefault = elementFormDefault,
-                                                            localElements = TRUE, nsuri = as.character(targetNamespace))))
+                                                            localElements = TRUE, nsuri = as.character(targetNamespace)),
+                            type = new("SchemaVoidType"),
+                            nsuri = targetNamespace))
      
    } else if(names(type)[1] == "complexType" && names(type[[1]]) == "simpleContent") {
       ext = type[[1]][[1]][[1]]
@@ -358,11 +364,13 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
                                               targetNamespace = targetNamespace,
                                               elementFormDefault = elementFormDefault, localElements = TRUE))
       names(attrs) = sapply(attrs, slot, "name")
-
+#XXX Constant.
+      ttype = xmlGetAttr(ext, "base", character())
+      ttype = structure(gsub(".*:", "", ttype), names = lookupNamespace(ttype, ext))
      return(new("SimpleElement", name = xmlGetAttr(type, "name", as.character(NA)),
                                  attributes = attrs,
                                  xmlAttrs = as(xmlAttrs(type), "character"),
-                                 type = xmlGetAttr(ext, "base", character()) #XXX type should be the extension type
+                                 type = ttype  #XXX type should be the extension type
                   #               count = getElementCount(type)
                 ))
   } else if(xmlName(type) %in% c("complexContent", "element")) {
@@ -428,7 +436,9 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
         # Make a separate function.
      attrs = list()
      for(i in xmlChildren(type))
-        attrs = c(attrs, processSchemaType(i, types, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault, localElements = TRUE))
+        attrs = c(attrs, processSchemaType(i, types, namespaceDefs = namespaceDefs,
+                                            targetNamespace = targetNamespace,
+                                             elementFormDefault = elementFormDefault, localElements = TRUE))
      names(attrs) = sapply(attrs, slot, "name")
 
      return(new("SchemaComplexType",
@@ -464,7 +474,8 @@ if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some
       return(NULL)
       
   } else if(xmlName(type) == "element") {
-       ans = processSchemaElement(tmp, namespaceDefs = namespaceDefs, types = types, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault)
+       ans = processSchemaElement(tmp, namespaceDefs = namespaceDefs, types = types, targetNamespace = targetNamespace,
+                                    elementFormDefault = elementFormDefault)
        if(is(ans, "Element") && (length(ans@type@name) == 0 || is.na(ans@type@name) || ans@type@name == ""))
           ans@type@name = name
           ans@documentation = docString
@@ -986,7 +997,6 @@ if(FALSE) {
       #??? Why should this always be a SimpleElement.
       # e.g. <element name="foo" type="xsd:string"/>
       # should map to <foo>
-    
       #XXX deal with nillable="true"
     els = strsplit(attrs["type"], ":")[[1]]
     if(length(els) > 1) {
@@ -1017,12 +1027,17 @@ if(FALSE) {
      obj =  new("SchemaVoidType")  # new("SimpleElement", name = name)
      
   } else if(names(element)[1] == "complexType" && all(names(element[[1]]) == "attribute")) {
+    #XXXXX See line 362. Very similar code.
      # e.g. ParameterField, ArrayType in PMML.
-    obj = new("SimpleElement", name = xmlGetAttr(element, "name", as.character(NA)),
-                                attributes = xmlApply(element[[1]], processAttribute, namespaceDefs = namespaceDefs,
+     #XXXX what about attributeGroups giving rise to multiple attributes? Is this in resolve()
+    attrs = xmlApply(element[[1]], processAttribute, namespaceDefs = namespaceDefs,
                                                                                       targetNamespace = targetNamespace,
                                                                                       elementFormDefault = elementFormDefault,
-                                                                                      localElements = TRUE, types = types),
+                                                                                      localElements = TRUE, types = types)
+    names(attrs) = sapply(attrs, slot, "name")
+#browser()    
+    obj = new("SimpleElement", name = xmlGetAttr(element, "name", as.character(NA)),
+                                attributes = attrs,
                                 type = character(), #,   count = getElementCount(element)
                                 default = defaultValue)
 
