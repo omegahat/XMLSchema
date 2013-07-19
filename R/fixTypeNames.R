@@ -54,14 +54,16 @@ function(types, nsuris, name)
   i = which(!isEl)
   
   prefix = if(any(duplicated(nsuris[i]))) {
-        # What do we do here. Give them unique names
-        # across the entire collection of schemas.
-        # e.g. id, id2, id3, id4, id5 ...
-    sprintf("%s%d", "id", seq(2, length = sum(i) - 1L))
-  } else
-    paste(".", basename(nsuris[i][-1]), sep = "")
+                  # What do we do here. Give them unique names
+                  # across the entire collection of schemas.
+                  # e.g. id, id2, id3, id4, id5 ...
+               sprintf("%s%d", "id", seq(2, length = sum(i) - 1L))
+            } else
+                paste(".", basename(nsuris[i][-1]), sep = "")
 
-  ans[i] = sprintf("%s%s", c("", prefix), name)
+
+#if(length(name) != length(prefix)) browser()
+  ans[i] = sprintf("%s%s", c("", prefix), name)  # there was a c("", prefix) ????
 
   ans
 }

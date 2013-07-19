@@ -11,7 +11,20 @@
 <items>
 
 <item>
-computeUniqueTypeNames - when this a prefix with more than 1 element,
+<r:code>
+library(XMLSchema)
+x = readSchema("nexml.xsd")
+defClass(x[[1]]$nexml, types = x)
+</r:code>
+
+The following works fine, BTW:
+<r:code>
+k = defClass(x[[1]]$Number)
+</r:code>
+</item>
+
+<item>
+computeUniqueTypeNames - when this is a prefix with more than 1 element,
 get a warning.
 Maintain unique URIs 
 </item>
