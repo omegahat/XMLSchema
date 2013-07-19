@@ -41,7 +41,7 @@ setGeneric("resolve", function(obj, context, namespaces = character(), recursive
                           id = sprintf("%s:%s:%s:%s", id.name, class(obj), getName(obj), class(context))
                           if(exists(id, work$pending, inherits = FALSE) && id.name != "?") {
                              cat("looking for", id, "and it is in pending, depth = ", depth, "\n")
-#                            browser()
+                            browser()#XXX
                           }
 
                           #XXX Activating this causes an element with a different name to be returned for something with the
@@ -330,7 +330,7 @@ setMethod("resolve", c("character", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE,
                       xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) {
 #if(!is.na(type)) browser()
-    browser()
+#    browser()
              els = strsplit(obj, ":")[[1]]
 
              if(length(els) > 1) {

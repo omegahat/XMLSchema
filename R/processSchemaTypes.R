@@ -1239,14 +1239,14 @@ function(node, name = xmlGetAttr(node, "name"), type = xmlGetAttr(node, "type", 
          els = strsplit(ref, ":")[[1]]
          ns = els[1]
          ref = els[2]
-browser()         
+#browser()         
          tmp = getNodeSet(as(node, "XMLInternalDocument"), sprintf("//xsd:schema/xsd:attribute[@name='%s']",
                                                                 gsub("[a-z0-9]+:", "", ref)),
                            c(xsd = "http://www.w3.org/2001/XMLSchema"))
       }
       
       if(length(tmp) == 0) {
-browser()
+#browser()
          nsuri = if(length(ns) && !is.na(i <- match(ns, names(namespaceDefs)))) 
                     namespaceDefs[[i]]$uri
                  else
