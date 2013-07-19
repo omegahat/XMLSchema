@@ -31,9 +31,9 @@ function(name, ns = "", nsuri = "", namespaceDefs = list(), counts = numeric(),
   if(missing(nsuri) && length(namespaceDefs)) {  #XXX do we want ns != ""     && ns != ""
      idx = match(ns, names(namespaceDefs))
      if(is.na(idx) && any(names(namespaceDefs) == ""))
-        idx = which(names(namespaceDefs) == "")
+        idx = which(names(namespaceDefs) == "")[1]
 
-     if(!is.na(idx)) 
+     if(!is.na(idx))
          nsuri = namespaceDefs[[idx]]$uri
    }
 

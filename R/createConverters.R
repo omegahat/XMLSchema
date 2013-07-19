@@ -103,12 +103,12 @@ setMethod("genSlotFromConverterCode", "SimpleSequenceType",
 setMethod("genSlotFromConverterCode", "ANY",
    function(elType, id, allowMissingNodes = FALSE, ...)
    {
-if(id == "ResultItem") browser()
+#if(id == "ResultItem") browser()
+#if(id == "child") browser()
 
       orig = elType
       isElement = is(elType, "Element")
       if(isElement) {
-         elName = elType@name
          defaultValue = elType@default
          elType = elType@type
       } else {
@@ -116,10 +116,13 @@ if(id == "ResultItem") browser()
                            elType@default
                         else
                            NULL
-         elName = elType@name
       }
+      elName = elType@name
       
-      optional = allowMissingNodes || ((is(elType, "SchemaType") || is(elType, "Element")) && length(elType@count) && (0 %in% elType@count))
+      optional = allowMissingNodes || is(elType, "CrossRefType")  ||
+                     ((is(elType, "SchemaType") || is(elType, "Element")) &&
+                       length(elType@count) && (0 %in% elType@count))
+      
       if(!optional && isElement && is(orig, "Element"))
           optional = length(orig@count) && (0 %in% orig@count)
 
@@ -142,11 +145,11 @@ if(id == "ResultItem") browser()
       } else {
           tmpl = gen.tmpl               
           tmpl[[3]][[3]] = getRTypeFromSOAP(elType, "type")
-          tmpl[[3]][[2]] = substitute(from[[name]], list(name = elName))
+          tmpl[[3]][[2]] = substitute(from[[name]], list(name = id)) # elName)) #??? Should this be id or elName? Was elName. Jun 6 2012
                                              # was if(is(elType, "GenericSchemaType")) elType@name else elType #XXXXXXX
-          if(optional) {
-            tmpl[[3]][[2]] = as.name("tmp")
-          }
+          if(optional) 
+             tmpl[[3]][[2]] = as.name("tmp")
+
       }
                  # Convert names to NAMES, etc.
       tmpl[[2]][[3]] = as.name(id)
@@ -242,10 +245,14 @@ setMethod("createFromXMLConverter",
                f = classTemplate
                bd = body(f)
                bd[[2]][[3]][[2]] = type@name
+
+               if(containsCrossRef(type, type@name, type@nsuri))
+                  bd[[3]] = quote(if(xmlSize(from) == 0 || xmlGetAttr(from, "nil", "") == "true") return(obj))
+               
                slotIds = names(type@slotTypes)
                b = mapply(genSlotFromConverterCode, type@slotTypes, slotIds, MoreArgs = list(allowMissingNodes = allowMissingNodes, ...))
 
-               bd[seq(3, length = length(slotIds))] = b
+               bd[seq(length(bd) + 1L, length = length(slotIds))] = b
                    # Add the expression that returns the object.
                bd[[length(bd) + 1]] = quote(obj)
 

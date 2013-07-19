@@ -11,6 +11,12 @@
 <items>
 
 <item>
+computeUniqueTypeNames - when this a prefix with more than 1 element,
+get a warning.
+Maintain unique URIs 
+</item>
+
+<item>
 read the elementFormDefault attribute on the schema and store it on the SchemaTypes.
 </item>
 

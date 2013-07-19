@@ -221,7 +221,7 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
    if(xmlName(type) == "anyAttribute")
        return(new("AnyAttributeDef"))
 
-#if(name == "grPostal") browser()   #DDDD
+if(name == "APIError") browser()   #DDDD
 
    if(xmlName(type) == "attributeGroup" && !is.na(xmlGetAttr(type, "ref", NA)))
      return(getAttributeGroup(type, namespaceDefs, targetNamespace, elementFormDefault))
@@ -329,7 +329,7 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
       els = lapply(tp, SchemaType, namespaceDefs = namespaceDefs, targetNamespace = targetNamespace)
     
       types = lapply(xmlChildren(u), processSchemaType, types = types, localElements = TRUE,
-                       targetNamespace = targetNamespace, namespaceDefs = namespaceDefs, localElements = TRUE)
+                       targetNamespace = targetNamespace, namespaceDefs = namespaceDefs)
 
       def = new("UnionDefinition", name = name, slotTypes = c(types, els))
    } else
@@ -388,31 +388,31 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
                   || ("sequence" %in% names(type)  && (all(names(type) %in% c("attribute", "anyAttribute", "annotation", "sequence"))))))  {
 # compare with condition at #377
             # we can just use xmlApply(, processSchemaType) then merge the slotTypes, etc.
-if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some surgery to add the extra elements.
+    if(xmlSize(type) > 1) {      # when seq is a SimpleSequenceType, need to do some surgery to add the extra elements.
 
-      els = xmlApply(type, processSchemaType, types, substitutionGroups, namespaceDefs, targetNamespace, elementFormDefault, localElements)
-      seq = els[[1]]
+         els = xmlApply(type, processSchemaType, types, substitutionGroups, namespaceDefs, targetNamespace, elementFormDefault, localElements)
+         seq = els[[1]]
 
-      if(length(els) == 1) {
-        seq@documentation = docString
-        return(seq)
-      }
+         if(length(els) == 1) {
+            seq@documentation = docString
+            return(seq)
+         }
       
 
-      if(!is(seq, "ClassDefinition") && (is(seq, "Element") || is(seq, "SchemaGroupRefType") || is(seq, "SimpleSequenceType"))) 
+        if(!is(seq, "ClassDefinition") && (is(seq, "Element") || is(seq, "SchemaGroupRefType") || is(seq, "SimpleSequenceType"))) 
              seq = new("ClassDefinition", name = name, slotTypes = structure(list(seq), names = computeName(seq))) #XXX fill in the rest.
                
-       seq@slotTypes = structure(append(seq@slotTypes, els[-1]),
+         seq@slotTypes = structure(append(seq@slotTypes, els[-1]),
                                     names = c(names(seq@slotTypes), as.character(sapply(els[-1], function(x) x@name))))
 
-         # important we don't do this before putting the seq into the first element of the slot type.
-       seq@name = name      
+                # important we don't do this before putting the seq into the first element of the slot type.
+         seq@name = name      
 
-      return(seq)
-    } else {
-         # the original version. Doesn't necessarily return  a SimpleSequenceType. This can be collapsed, e.g. <sequence><element/></sequence>
-      seq = processSequence(type[["sequence"]], types, namespaceDefs, name, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault)
-    return(seq)
+         return(seq)
+      } else {
+             # the original version. Doesn't necessarily return  a SimpleSequenceType. This can be collapsed, e.g. <sequence><element/></sequence>
+        seq = processSequence(type[["sequence"]], types, namespaceDefs, name, targetNamespace = targetNamespace, elementFormDefault = elementFormDefault)
+        return(seq)
     }
   } else if(xmlName(type) == "complexType" && (all(names(type) %in% c("attribute", "anyAttribute", "annotation", "sequence")))) {
             # so all attributes
@@ -1448,8 +1448,13 @@ function(type, name, types, namespaceDefs, targetNamespace = NA, elementFormDefa
 
           def@name = name
           
+        } else if(xmlName(type) == "complexContent" && !is.null(restriction)) {
+#browser()
+          def = new("ExtendedClassDefinition", name = name, base = xmlGetAttr(restriction, "base"),
+                       baseType = types[[xmlGetAttr(restriction, "base")]]) # add uris.
         } else {
-           warning("case not handled")
+           warning("case not handled for ", name, " ", class(type))
+           #nexml.xsd: DNAMapping
            def = NULL
         }
         

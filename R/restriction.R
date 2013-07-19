@@ -4,8 +4,10 @@ createRestrictionType =
 function(name, rnode, namespaces = list(), targetNamespace = NA, base = xmlGetAttr(rnode, "base"))
 {
      #XXX need to figure out the namespace and check it is an XSD double or integer
-  
- if(length(base) > 1) base = base[2]
+
+
+   if(length(base) > 1)
+     base = base[2]
 
    if(base == "double" || base == "integer") {
       r = getRestrictedRange(rnode)
@@ -29,13 +31,18 @@ function(name, rnode, namespaces = list(), targetNamespace = NA, base = xmlGetAt
       def@toConverter = makeValueToConverter(def@name, targetNamespace)      
 
    } else {
+
+     isPattern =  ("pattern" %in% names(rnode))
+       
+
                                         #XXX Assume enumeration values for present.
-     if(!(base %in% c("string", "token", "NMTOKEN", "Name", "ID", "IDREF"))) {
+     if(!isPattern && !(base %in% c("string", "token", "NMTOKEN", "Name", "ID", "IDREF"))) {
         warning("treating ", name, " as an enumeration type")
      }
 
 
-     if(base == "string")
+         # Should check the ancestry of the type. For this, we need the collection of type descriptions.
+     if(base == "string" || isPattern)
         def = createRestrictedStringDefinition(rnode, name, targetNamespace)
      else
         def <- new("EnumValuesDef", name = name, values = xmlSApply(rnode,  xmlGetAttr, "value"))

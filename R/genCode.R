@@ -139,8 +139,10 @@ function(i, compute = FALSE)
            i@type@name
         } else if(is(i, "GenericSchemaType") || is(i, "XMLSchemaComponent")) {
            if(length(i@Rname)) i@Rname else i@name
-        } else
-           i$name
+        } else if(is.character(i))
+          i
+       else 
+          i$name
 
   if(is.na(ans) && compute)
     computeName(i)
@@ -618,12 +620,24 @@ setMethod("getDefaultValue", "Element",
                 getDefaultValue(type@type)
             })
 
+containsCrossRef =
+function(x, name = x@name, nsuri)
+{
+  i = sapply(x@slotTypes,
+              function(x)
+                  (is(x, "CrossRefType") || is(x, "ClassDefinition")) && name == x@name && nsuri == x@nsuri)
+  any(i)
+}
+
 defineClassDefinition =
 function(i, types, namespaceDefs, name, classes, pending, baseClass, where = globalenv(),
           verbose = FALSE, force = FALSE, extendList = FALSE, opts = new("CodeGenOpts"))
 {
 orig = i
-if(i@name %in% 'LatLonBoxType') browser()
+#if(i@name %in% 'Classification') browser()
+
+  # check if cross reference type
+     isCrossRef = containsCrossRef(i, i@name, i@nsuri)
 
      i@slotTypes = lapply(i@slotTypes, resolve, types, namespaceDefs)
 #!!!!
@@ -693,7 +707,7 @@ if(i@name %in% 'LatLonBoxType') browser()
          baseClass = xbaseClass
      }
 
-      baseClass = c(baseClass, extraBaseClasses)
+     baseClass = c(baseClass, extraBaseClasses)
 
        if(verbose)
                 cat("defining class", name, "\n")

@@ -56,7 +56,6 @@ export(createFromXMLConverter)
 exportMethods(createFromXMLConverter)
 
 
-exportClass(string)
 
 export(coerceListToS4)
 exportMethods(coerce)
@@ -89,5 +88,8 @@ export(defClass)
 exportMethods(defClass)
 
 exportClasses(SchemaStringType, SchemaIntType, SchemaDoubleType, SchemaFloatType)
-exportClass(string)
+exportClasses(string)
+
+export(toXML)
+exportMethods(toXML)
 

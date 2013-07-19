@@ -85,7 +85,8 @@ setClass("SelfRef", contains = "SchemaType")
 # The following are for types that involve recursive cross-references.
 # The CrossRefType is for representing a SOAP/XMLSchema type.
 # The CrossRefClass is for defining a class corresponding to a CrossRefType induced in an XMLSchema
-setClass("CrossRefType", representation(subclasses = "character"), contains = "SchemaType")
+setClass("CrossRefType", representation(subclasses = "character"), contains = "SchemaType",
+                          prototype = prototype(default = NULL))
 setClass("CrossRefClass")
 
 

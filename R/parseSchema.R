@@ -45,10 +45,10 @@ function(url, removeComments = TRUE, namespaces = c(xs = "http://www.w3.org/2001
 {
   if(is(url, "XMLAbstractDocument")) {
      doc = url
-     baseURL = dirname(docName(url))
+     baseURL = docName(url)
    } else {
      doc = xmlParse(url)
-     baseURL = dirname(docName(doc))
+     baseURL = docName(doc)
    }
 
       # Force the prefix of the namespaces to be xs
@@ -83,13 +83,18 @@ function(url, removeComments = TRUE, namespaces = c(xs = "http://www.w3.org/2001
 
     includes = getNodeSet(doc, "//xs:schema/xs:include", namespaces)
     if(length(includes)) {
+
         sapply(includes, function(node) {
+ #browser()
+                                # Read the document in the <schema> node and then
+                                # replace any of the schema nodes in that document
                              xdoc = importSchema(node, baseURL, prevSchema)
                              if(is(xdoc, "XMLSchemaURL"))
                                return()
                              schema = getNodeSet(xdoc, "//xs:schema", c(xs = "http://www.w3.org/2001/XMLSchema"))
                              p = xmlParent(node)
-                             sapply(schema, function(s) addChildren(p, kids = xmlChildren(s)))
+                             sapply(schema, function(s)
+                                               addChildren(p, kids = xmlChildren(s)))
                          })
         removeNodes(includes) # , TRUE)
       }

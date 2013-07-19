@@ -143,6 +143,7 @@ function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRU
   tt = if(is.list(node))
           sapply(node,  fromXML, type = type@elType, namespaces = namespaces, converters = converters)
        else
+             # How about xmlApply ?
           xmlSApply(node, fromXML, type = type@elType, namespaces = namespaces, converters = converters)
 
   if(is.atomic(tt))
@@ -264,6 +265,16 @@ setMethod("fromXML", c(type="missing"), fromXML.default)
 setMethod("fromXML", c(type="NULL"), fromXML.default)
 setMethod("fromXML", c(type="character"), fromXML.default)
 setMethod("fromXML", c(type="ANY", "ANY", "ANY"), fromXML.default)
+
+
+setMethod("fromXML", c(type = "CrossRefType"),
+            function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRUE, type = NULL,  multiRefs = list(), namespaces = gatherNamespaceDefs(node)) {
+              if(!is.null(getClassDef(type@name)))
+                  as(node, type@name)
+              else
+                  fromXML.default(node, root, converters, append, type, multiRefs, namespaces)
+            })
+
 
 setMethod("fromXML", c(type = "ArrayType"),
 function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRUE, type = NULL, multiRefs = list(), namespaces = gatherNamespaceDefs(node))
