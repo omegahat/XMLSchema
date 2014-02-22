@@ -116,15 +116,18 @@ setAs("POSIXlt", "date", as.date)
 
 as.dateTime = function(from) {
   if(is.character(from)) {
+    if(from == "") {
+      return(as.POSIXct(NA))
+    }
          # try different formats until we get a non NA
      for(fmt in c("%Y-%m-%dT%H:%M:%S"))
         if(!is.na(strptime(from, fmt))) {
-          from = strptime(from, fmt)
+          from = as.POSIXct(strptime(from, fmt))
           break
         }
      if(is.character(from))
        stop("couldn't convert string to dateTime.  Create a POSIXct object directly and pass that instead")
-  } 
+  }
   from = as(from, "POSIXct")
   new("dateTime", from)
 }
@@ -301,6 +304,7 @@ SchemaPrimitiveConverters <-
                      "boolean" = SOAP.logical,
 # Extensions from Datatypes schema                     
                      "decimal" = as.numeric,
+                     "dateTime" = as.dateTime,
                      anyType = function(x) x)
 
   # Double up for the moment with xsd: prefixes to duplicate the existing entries.
@@ -383,6 +387,11 @@ mapSchemaTypeToS =
   # the prefix to the actual URI and then compare URIs.
 function(type, types = list(), namespaceDefs = list())
 {
+     # check if this is an XML schema built-in
+   if(is(type, "SchemaTypeReference") && type@nsuri == "http://www.w3.org/2001/XMLSchema")
+      return(switch(type@name, language = "XMLlanguageType",
+               stop("need to implement this built-in class type")))
+      
    if(is(type, "Element")) {
      return(mapSchemaTypeToS(type@type, types, namespaceDefs))
    }
@@ -419,8 +428,10 @@ function(type, types = list(), namespaceDefs = list())
          return(type@name)
     }
   
-    if(is(type, "AttributeDef") || is(type, "Element"))
+    if(is(type, "AttributeDef") || is(type, "Element")) {
+#       if(length(type@type
        type = type@type
+    }
 
      if(is(type, "SchemaTypeReference"))
         type = resolve(type, types, namespaceDefs, depth = NA)

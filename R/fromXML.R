@@ -130,7 +130,7 @@ setMethod("fromXML",
               val <- converters[[which]](xmlValue(node))
             else {
               val <- xmlValue(node)
-              warning("Don't understand the primitive SOAP type `", type, "' yet")
+              warning("Don't understand the primitive XML type `", type@name, "' yet")
             }
 
             val
@@ -202,7 +202,22 @@ function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRU
 #      return(fromSOAPArray(node, root = root, converters = converters, multiRefs = multiRefs))
   }
 
+ 
   if(is.character(type)) {
+
+    if(grepl(":", type)) {
+      els = strsplit(type, ":")[[1]]
+      ns = as(XML:::findNamespaceDefinition(node, els[1]), "character")
+       # check if this is one we recognize, e.g SOAP
+       # http://schemas.xmlsoap.org/soap/encoding/
+       # http://www.w3.org/2001/XMLSchema-instance 
+      if(ns == "http://schemas.xmlsoap.org/soap/encoding/") {
+        if(els[2] == "Array") {
+           return(fromSOAPArray(node,  converters = converters, namespaces = namespaces, type = gsub("\\[.*", "", a["arrayType"])))
+        }
+      }
+    }
+    
     if(type %in% names(converters))
        return(converters[[type]](xmlValue(node)))
     else {
