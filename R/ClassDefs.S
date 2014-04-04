@@ -61,18 +61,21 @@ setAs("Base64Encoded", "character",
 
 setClassUnion("AnySimpleType",  c("logical", "integer", "numeric", "character"))
 
+setClassUnion("XMLNodeOrNull", c("NULL", "XMLInternalElementNode"))
+
 setClass("GenericSchemaType", representation(name="character",
                                              ns="character",
                                              nsuri="character",
                                              default = "ANY", # "character",                                             
                                              Rname = "character", # the name of the type in R that corresponds to this class. Needed if we have to manually specify it.
-                                             documentation = "character"))
+                                             documentation = "character",
+                                             srcNode = "XMLNodeOrNull"))
 
 
 setClass("SchemaType", representation(count = "numeric", # use numeric rather than integer because of Inf for unbounded1.
                                       abstract = "logical"
                                     ), contains = "GenericSchemaType",
-                     prototype = prototype(default = NA_character_))
+                       prototype = prototype(default = NULL))  #XXX was  NA_character_  Jul 20 2013
 
 
  # used for a slot that has a type that is the same as the parent type being defined
@@ -103,7 +106,7 @@ setClass("AnySchemaType", contains = "SchemaType",
 setClass("SchemaVoidType", representation("SchemaType"),
             prototype = list(name = "null", ns = "xsi", Rname = "NULL"))
 
-setClass("SchemaTypeReference", representation("SchemaType"))
+setClass("SchemaTypeReference", representation("SchemaType", optional = "logical"))
 setClass("AttributeGroupReference", contains = "SchemaTypeReference")
 
 
@@ -185,14 +188,20 @@ setClass("XMLSchemaComponent")
 
 # Was SchemaType and not BasicSchemaType. But needed the fromConverter. See 
 #   http://www.weather.gov/forecasts/xml/DWMLgen/wsdl/ndfdXML.wsdl
-setClass("RestrictedStringType", contains = "BasicSchemaType") #  , prototype = list(Rname = "string"))
+setClass("RestrictedSchemaType", contains = "BasicSchemaType") #  , prototype = list(Rname = "string"))
+#XXXX Jul 28 added SchemaStringType as base class. Was RestrictedSchemaType.
+# Motivation is to be able to compare types to see if all strings.
+setClass("RestrictedStringType", contains = c("SchemaStringType", "RestrictedSchemaType")) #  , prototype = list(Rname = "string"))
 #              prototype = list(ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema")))
 setClass("RestrictedStringDefinition", representation(values = "character"), contains = "RestrictedStringType")
 setClass("RestrictedStringPatternDefinition", representation(pattern = "character"), contains = "RestrictedStringType")
+setClass("RestrictedStringLengthType",
+            representation(length = "integer"),  # min, max, 
+            contains = "RestrictedStringType")
 
 
 
-setClass("RestrictedNumber", representation(range = "numeric", inclusive = "logical"), contains = "BasicSchemaType")
+setClass("RestrictedNumber", representation(range = "numeric", inclusive = "logical"), contains = "RestrictedSchemaType")
 setClass("RestrictedDouble", contains = "RestrictedNumber")
 # Don't define these                  prototype = list(Rname = "numeric"))
 setClass("RestrictedInteger", contains = "RestrictedNumber")
@@ -208,7 +217,7 @@ setClassUnion("AttributeType", c("RestrictedStringType", "EnumValuesDef", "chara
  # So we use a common base class.
  #  We don't actually need the name for the AnyAttributeDef, but we share it here for now
  # since the code that processes the nodes in the schema wants to set the name.
-setClass("GenericAttributeType", contains = "GenericSchemaType") # was "XMLSchemaComponent"
+setClass("GenericAttributeType", representation(optional = "logical"), contains = "GenericSchemaType") # was "XMLSchemaComponent"
 
 setClass("AnyAttributeDef", contains = "GenericAttributeType")
 setClass("AttributeDef", representation(type = "AttributeType",
@@ -223,7 +232,7 @@ setClass("AttributeGroup", representation(attributes = "list"), contains = "Gene
 
 setClassUnion("SchemaTypeOrElement", c("SchemaType", "Element")) # Don't need if elType in SimpleSequenceType is not this union.
 
-setClass("SimpleSequenceType", representation("BasicSchemaType", elementType = "character", elType = "SchemaTypeOrNULLOrElement")) # OrElement???
+setClass("SimpleSequenceType", representation("BasicSchemaType", elementType = "character", elType = "SchemaTypeOrNULLOrElement", proxyElementClassName = "character")) # OrElement???
 
 # White space spearated values
 setClass("ListType", contains = "SimpleSequenceType")
@@ -249,6 +258,12 @@ setClass("CompositeTypeDefinition", representation("BasicSchemaType",
                                     contains = "TerminalSchemaType")
 setClass("ClassDefinition",  contains = "CompositeTypeDefinition")
 setClass("UnionDefinition", contains = "CompositeTypeDefinition")
+# This is a specialization for union within a simpleType. Can there be others?
+setClass("SimpleTypeUnionDefinition", contains = "UnionDefinition")
+# This is for a collection of types that are SchemaStringTypes, including
+#  RestrictedString... Types.
+setClass("StringTypeUnionDefinition", contains = "UnionDefinition")
+
 setClass("ArrayClassDefinition",  contains = "CompositeTypeDefinition")
 
 
@@ -294,4 +309,23 @@ setOldClass("WSDLTypeDescription")
 setClass("StringEnum", contains = "character")
 
 
+setClass("BuiltinXMLSchemaType", contains = "VIRTUAL")
+
+setClass("XMLlanguageType", contains = c("RestrictedStringPatternDefinition", "BuiltinXMLSchemaType"),
+          prototype = list(name = "language", pattern = "[a-zA-Z]{1,8}(-[a-zA-Z0-9]{1,8})*"))
+
+IDREF.rx = "[a-zA-Z_:][[-a-zA-Z0-9._:]"  # get combining and extending char in here.         
+setClass("XMLIDREFType", contains =  c("RestrictedStringPatternDefinition", "BuiltinXMLSchemaType"),
+          prototype = list(pattern = IDREF.rx, name = "IDREF"))
+
+#See http://www.w3.org/TR/2000/WD-xml-2e-20000814#NT-Names
+setClass("XMLIDREFSType", contains =  c("RestrictedStringPatternDefinition", "BuiltinXMLSchemaType"),
+          prototype = list(pattern = sprintf("%s( +%s)*", IDREF.rx, IDREF.rx), name = "IDREFS")
+         )
+#XXX make instances classes for IDREF and IDREFS.
+
+# THis is the instance version
+setClass("XMLlanguage", contains = "XMLlanguageType")
+
+setClass("unsignedLong", contains = c("BasicSchemaType", "BuiltinXMLSchemaType"), prototype = list(name = "unsignedLong", nsuri = "http://www.w3.org/2001/XMLSchema"))
 

@@ -160,14 +160,14 @@ function(type, name, nsuri = character())
                   Rname = name,
                   ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema"),
                   toConverter = toFun,
-                  fromConverter = fun)
+                  fromConverter = fun, srcNode = type)
   } else {
 
     if(any(names == "pattern")) {
        pattern = xmlGetAttr((kids[names(kids) == "pattern"])[[1]], "value")
        pattern = sprintf("^%s$", pattern)
        def = new("RestrictedStringPatternDefinition", name = name, pattern = pattern,
-                     ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema"))
+                     ns = "xsd", nsuri = c(xsd = "http://www.w3.org/2001/XMLSchema"), srcNode = type)
        def@fromConverter = function(from) {
                               if(is(from, "XMLAbstractNode"))
                                  from = xmlValue(from)
@@ -186,8 +186,18 @@ function(type, name, nsuri = character())
        environment(def@toConverter) = DefaultFunctionNamespace
        formals(def@toConverter)[["epattern"]] = epattern
        
+     } else {
+        lenInfo = c(min = 0L, max = as.integer(NA))
+        if("length" %in% names(res))
+          lenInfo[c(1L, 2L)] = xmlGetAttr(res[["length"]], "value", converter = as.integer)                        
+        if("minLength" %in% names(res))
+          lenInfo[1L] = xmlGetAttr(res[["minLength"]], "value", converter = as.integer)
+        if("maxLength" %in% names(res))
+          lenInfo[2L] = xmlGetAttr(res[["maxLength"]], "value", converter = as.integer)
+        
+        def = new("RestrictedStringLengthType", name = name, length = lenInfo, srcNode = type)
+     }
        def
-    }
   }
 }
 
