@@ -93,3 +93,6 @@ exportClasses(string)
 export(toXML)
 exportMethods(toXML)
 
+exportClass("XMLlanguageType")
+export(genericConstructor)
+

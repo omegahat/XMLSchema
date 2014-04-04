@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<?xml-stylesheet type="text/xsl" href="/Users/duncan/Classes/StatComputing/XDynDocs/inst/XSL/OmegahatXSL/Todo.xsl" ?> 
+<?xml-stylesheet type="text/xsl" href="XSL/OmegahatXSL/Todo.xsl" ?> 
 
 <topics xmlns:r="http://www.r-project.org">
 <title>XMLSchema package</title>
@@ -10,16 +10,340 @@
 <title>Schema</title>
 <items>
 
+<item status="investigate">
+Problem with callNextMethod for AttributeGroupReference with
+complaint about 'context missing'.
+See schema.R in reml and  defClass(s, types = x).
+Appear to need to pass the two arguments in the method dispatch
+to make it work, but only in some circumstances.
+Without those, 
+<r:code>
+library(XMLSchema)
+x = readSchema("~/Downloads/eml-2.1.1/eml.xsd", inline = FALSE)
+s = x[["eml://ecoinformatics.org/resource-2.1.1"]]$"i18nNonEmptyStringType"
+defClass(s, types = x)
+</r:code>
+causes problems.
+</item>
+
 <item>
+generalize synthesizing restriction in defUnionClass for integers, numbers.
+genCode:879
+</item>
+
+<item status="check">
+For elements, should we create explicit classes that extend the type, e.g.
+salutation in eml-party.xsd. So we'd have a class salutation
+that contains "i18nNonEmptyStringType. Then we could use this class name
+in ListOfsalutation rather than the raw type.
+This is not necessary, but may make the code less surprising and more explanatory.
+<br/>
+ListOf.. when the element type is an XML element (not a type)
+just extends list. It is the validity method that checks.
+If we want to write a constructor that coerces individual values
+to the target type to put in the list, how can we do this without
+an explicit element type.
+<br/>
+ListOfvalue, ListOfgivenName
+<br/>
+
+For salutation, we have a LocalElement in the first slotTypes of the Person 
+description.
+When we resolve it, we get a SimpleSequenceType from makeSimpleSequence.
+That takes type@type to by-pass the LocalElement. If we keep the LocalElement,
+we can use it to create an intermediate class.
+However, if we do this, we get recursion problems in resolve.
+But if we add a new slot to the SimpleSequenceType named proxyElementClassName
+and capture that in <r:func>makeSimpleSequence</r:func> if the element type of the sequence is a LocalElement,
+then <r:func>createArrayClass</r:func> can create the intermediate class.
+See <r:func>createArrayClass</r:func>.
+</item>
+
+
+<item status="check">
+ListOf for primitive/atomic elements should not extend list but the atomic type.
+e.g. ListOfsalutation or ListOfvalue.
+See createArrayClass.
+<r:code>
+library(XMLSchema); x = readSchema("~/Downloads/eml-2.1.1/eml.xsd", inline = FALSE)
+s = x[["eml://ecoinformatics.org/resource-2.1.1"]]$"i18nNonEmptyStringType"
+defClass(s, types = x)
+getClass("ListOfvalue")
+</r:code>
+</item>
+
+
+<item status="done">
+Create generic constructor functions that do the coercion of the arguments
+to the appropriate types.
+</item>
+
+<item status="low">
+Make specialized constructors for each class, i.e. avoid genericConstructor.
+</item>
+
+<item>
+Create coercion methods for primitive element types to ListOf...
+<br/>
+Do we need these?
+<br/>
+For example, "Mr." for ListOfsalutation.
+<r:code>
+setAs("character", "ListOfsalutation", function(from) new("ListOfsalutation", from))
+</r:code>
+<r:code>
+library(XMLSchema); x = readSchema("~/Downloads/eml-2.1.1/eml.xsd", inline = FALSE)
+p = x[['eml://ecoinformatics.org/party-2.1.1']]; k = defClass(p$Person, types = x)
+new("ListOfvalue", "foo")
+new("ListOfvalue", new("value", "foo"))
+as("foo", "ListOfvalue") # works straight off with no additional code. coercion method was created implicitly by methods package.
+
+o = ListOfvalue("abc", "def") # now added constructor function. But note the elements are not
+</r:code>
+What about salutation. No class.
+<br/>
+Loose the class of the elements.
+Should we make  all ListOf extend list rather than the primitive type.
+Would like to treat a collection of, e.g., strings as a character vector.
+<br/>
+For a Person object, then we want 
+<r:code>
+pp = k(salutation = "Mr.", givenName = "Duncan", surName = "Temple Lang")
+pp = k("Mr.", "Duncan", "Temple Lang")
+</r:code>
+to work. The generic constructor should handle these two the same way,
+i.e. handle the missing names for us. So it is the coercion mechanisms 
+we want, which both work out of the box:
+<r:code>
+as("foo", "value") 
+as("foo", "ListOfvalue") 
+</r:code>
+but 
+<r:code>
+as("foo", "ListOfsalutation")
+as("foo", "salutation")
+</r:code>
+doesn't.
+
+<r:code>
+# Don't need. Do now that we went back to list as baseClass
+setAs("character", "ListOfvalue", function(from) new("ListOfvalue",  list(as(from, "value"))))
+setAs("character", "i18nNonEmptyStringType", function(from) new("i18nNonEmptyStringType", ListOfvalue = as(from, "ListOfvalue")))
+#setAs("character", "ListOfsalutation", function(from) new("ListOfsalutation", as(from, "i18nNonEmptyStringType")))
+#What about
+setAs("character", "ListOfsalutation", function(from) new("ListOfsalutation",  list(as(from, "i18nNonEmptyStringType"))))
+</r:code>
+But then
+<r:code>
+as("foo", "ListOfsalutation")
+</r:code>
+fails the validity test because not all elements are of type value.  Is the validity test incorrect.
+<br/>
+(Tracing setClass in <r:expr>p = x[['eml://ecoinformatics.org/party-2.1.1']]; k = defClass(p$Person, types = x)</r:expr>)
+<ol>
+<li>When defining Person, define lang as contains = "character".</li>
+<li>NonEmptyString extends string, but has a validity method to impose the restrictions</li>
+<li>value  doesn't have an explicit contains, but extends in the representation -
+ NonEmptyStringType and VirtualXMLSchemaClass. It also has a lang slot of class lang.
+The .Data slot is character</li>
+<li>ListOfvalue extends "value"??? with an empty representation.
+"value" is the value of the builtinClass in createArrayClass.
+Shouldn't this be either list or character.</li>
+<li>i18nNonEmptyStringType has a representation  with 2 slots ListOfvalue and lang of the same classes as the name.
+ and extends VirtualXMLSchema.</li>
+<li>salutation   has no representation and extends i18nNonEmptyStringType</li>
+<li>ListOfsalutation has no representation and contains = "list"</li>
+<li>givenName  extends  "i18nNonEmptyStringType", no representation</li>
+<li>ListOfgivenName extends "list" and  no representation</li>
+<li>Person extends nothing  specific (VirtualXMLSchemaClass) and has 3 slots - salutation, givenName and surName of
+class  ListOfsalutation, ListOfgivenName, i18nNonEmptyStringType.</li>
+</ol>
+Why does value extend AttributeType indirectly?
+</item>
+
+
+
+<item>
+Make certain the toXML converters respect the order (probably automatic)
+and also the optional aspects.
+Also output attributes as well as child elements.
+</item>
+
+<item status="done">
+When making the prototype, drop the slots for which we don't have a prototype value.
+Are they just NULLs. What about values that could be NULL. Use I(NULL)?
+</item>
+
+<item status="done">
+When calling makePrototype(), the representation for ListOfvalue is "" 
+when making i18nNonEmptyStringType.
+</item>
+
+<item status="ensure">
+Should the default value be NA, e.g. for value in eml. Or should it be
+character().
+<br/>
+getDefaultValue, optionalDefaultValue
+<br/>
+I just changed the default value in the SchemaType definition to NULL.
+So this should cause it to be ignored in makePrototype.
+We may want to create a class (even S3) that indicates that it is to be ignored/made up/uncomputed/default default-value
+so that the code knows to ignore it.
+<br/>
+[Fixed] The <r:null/> value is causing problems when setting it on an AttributeDef which should be a character.
+Coerce the default value passed top optionalDefaultValue to the expected type by obj@default.
+</item>
+
+<item>
+Do something sensible for the to and fromConverter when there is no name.
+e.g. tmp in schema.R for reml.
+(Is it tmp or value we mean?).
+value has toConverter with body NULL.
+<br/>
+Alternatively, avoid absence of names!!!
+</item>
+
+
+<item status="high">
+Check that we can convert from XML to a class and from a class to XML.
+Check with the SOAP code that does this.
+<br/>
+createFromXMLConverter generates coercion methods for different types.
+Each function is of class XMLTypeConverter. We have to enable  
+the call to setAs() as this just creates the function.
+The idea is that to convert a document to R objects,
+we coerce the root node to the top-level class.
+We need to know the class name corresponding to the root node.
+Somewhere, I recall creating this as a vector of node-names to classes
+<br/>
+Is the code to create XML from R objects in SSOAP or is there equivalent
+code here?
+
+<br/>
+The following produces an identity function
+<r:code>
+createFromXMLConverter(x[["eml://ecoinformatics.org/dataset-2.1.1"]]$dataset)
+</r:code>
+</item>
+
+<item status="check">
+[Done] Add an optional = "logical" field for AttributeGroupReference
+and capture this.
+Do we have an AttributeReference rather than a group.
+An example of this is in i18nNoEmptyStringType in eml-resource.xsd.
+<br/>
+The slot has been added to AttributeGroupReference and also to GenericAttributeType.
+It is set for AttributeGroupReference. 
+<br/>
+[Done]
+<i>This must get propagated when we resolve that reference.</i>
+<r:code>
+library(XMLSchema); x = readSchema("~/Downloads/eml-2.1.1/eml.xsd", inline = FALSE)
+s = x[["eml://ecoinformatics.org/resource-2.1.1"]]$"i18nNonEmptyStringType"
+lov = s@slotTypes[[1]]
+value = lov@elType
+class(value@slotTypes[[1]])
+tmp = resolve(value@slotTypes[[1]], x)
+</r:code>
+<br/>
+[Check]
+<i>We also have to capture it for the GenericAttributeType instances when processing the XML.</i>
+See processAttribute in processSchemaTypes.R
+</item>
+
+<item status="done">
+Validity method for  ListOf... has character(0) for the element name.
+<br/>
+Problem was with makeListValidityFun being called with @Rname and not @name.
+So now check if @Rname has non-zero length and use @name if it does.
+<r:code>
+library(XMLSchema); x = readSchema("~/Downloads/eml-2.1.1/eml.xsd", inline = FALSE)
+p = x[['eml://ecoinformatics.org/party-2.1.1']]
+k = defClass(p$Person, types = x)
+getValidity(getClass("ListOfvalue"))
+</r:code>
+</item>
+
+<item>
+Recursion problems when define
+<r:code>
+library(XMLSchema); x = readSchema("~/Downloads/eml-2.1.1/eml.xsd", inline = FALSE)
+ds = x[["eml://ecoinformatics.org/dataset-2.1.1"]]$DatasetType
+defClass(ds, types = x)
+</r:code>
+</item>
+
+<item>
+eml schema
+DatasetType seems to extend itself.
+The base is character(0), but baseType has a name slot DatasetType.
+<r:code>
+ds = x[["eml://ecoinformatics.org/dataset-2.1.1"]]$DatasetType
+</r:code>
+This is an ExtendedClassDefinition. The @baseType slot is of class
+UnionDefinition.
+</item>
+
+<item>
+Complete other built-in schema types  - in  resolve and instances classes.
+resolve:26. Generic method for resolve.
+</item>
+
+<item>
+No name on anonymous simpleType  defined within an attribute definition.
+<r:code>
+library(XMLSchema); x = readSchema("~/Downloads/eml-2.1.1/eml.xsd", inline = FALSE)
+k = defClass(x[["eml://ecoinformatics.org/access-2.1.1"]]$access, types = x)
+</r:code>
+No srcNode.
+<br/>
+Should collapse the two elements of the union into  a general string.
+This is a restriction to 4 enumerated values and also a regular string.
+We can do this 
+</item>
+
+<item>
+ExendedClassDefinition with same name as base class.
+The first/top-level is an ExtendedClassDefinition,
+and its @type is a UnionDefinition but has the same name
+<r:code>
+library(XMLSchema); x = readSchema("~/Downloads/eml-2.1.1/eml.xsd", inline = FALSE)
+a = x[["eml://ecoinformatics.org/access-2.1.1"]]$access
+at = resolve(a@type, x)
+class(at)
+class(at@baseType)
+at@baseType@name
+k = defClass(x[["eml://ecoinformatics.org/access-2.1.1"]]$access, types = x)
+</r:code>
+</item>
+
+<item>
+Missing name on types within measurementScale in eml-attribute.xsd
+<r:code>
+library(XMLSchema); x = readSchema("~/Downloads/eml-2.1.1/eml.xsd", inline = FALSE)
+at = x[["eml://ecoinformatics.org/attribute-2.1.1"]]$AttributeType
+</r:code>
+The top-most node is an element and has an anonymous complex type as a child
+which has an anonymous choice as its child.
+</item>
+
+<item>
+Get defining classes to work generally, e.g. on another schema also.
+See kml.R and 
 <r:code>
 library(XMLSchema)
 x = readSchema("nexml.xsd")
-defClass(x[[1]]$nexml, types = x)
+k = defClass(x[[1]]$nexml, types = x)
 </r:code>
+Works now. (Jul 21, 2013). Added IDREFS as a type.
+Check what is actually produced.
+Broken again. exists(id, work$pending).
+id is an empty character.
+<br/>
 
 The following works fine, BTW:
 <r:code>
-k = defClass(x[[1]]$Number)
+k = defClass(x[[1]]$Number, types = x)
 </r:code>
 </item>
 
@@ -145,6 +469,11 @@ KML schema and the complexType element with name ObjectType
 doc = xmlParse("~/Books/XMLTechnologies/Rpackages/RKML/inst/schema/kml21.xsd")
 o = getNodeSet(doc, "//x:*[@name='ObjectType']", "x")
 processSchemaType(o[[1]])
+</r:code>
+[later] What's the issue? It 
+<r:code>
+kml = readSchema("kml21.xsd")
+class(kml[[1]]$ObjectType)
 </r:code>
 </item>
 
