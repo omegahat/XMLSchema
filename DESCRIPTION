@@ -17,6 +17,7 @@ Collate:  ClassDefs.S processSchemaTypes.R SOAPTypes.S resolve.R genCode.R parse
      createConverters.R schema.R array.S basicTypes.R utils.R selfRefs.R enums.R restriction.R
      makeSchemaCollection.R gatherNamespaceDefs.R targetNamespace.R fixTypeNames.R serialize.R
      toXML.R dependencies.R validity.R show.R fromXML.R
+     constructor.R
 URL:  http://www.omegahat.org/XMLSchema,  http://www.omegahat.org
       http://www.omegahat.org/bugs
 
