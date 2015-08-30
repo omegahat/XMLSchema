@@ -1,5 +1,6 @@
 #############################################
 
+#!!!!! See below for version that replaces this
 processSchemaTypes =
   #
   # This is a different version than in processSchemaTypes.R and is currently experimental (Fri Aug 19 12:43:27 2011)
@@ -119,6 +120,17 @@ function(node, namespaceDefs = gatherNamespaceDefs(node), createConverters = FAL
                       
                       if(is.null(o))
                          next
+
+#XXX
+                      if(is(o, "GenericSchemaType")) {
+                        if(is(el, "XMLInternalElementNode"))
+                          o@srcNode = el
+                        else
+                           stop("!!")
+                      } else
+                        cat("not a generic schema type")
+#XXX                      
+                      
                       
                       if(FALSE && createConverters && is(o, "BasicSchemaType"))
                          o@fromConverter = createFromXMLConverter(o, ans)

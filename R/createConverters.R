@@ -215,7 +215,7 @@ setMethod("createFromXMLConverter",
                fun = callNextMethod()
                
                if(type@base %in% c("character", "string")) {
-                 e = quote(obj <- new("", XMLSchema:::getNodeText(from)))
+                 e = quote(obj <- new("", getNodeText(from)))
                  e[[3]][[2]] = getRTypeFromSOAP(type@name, "type")
                } else {
                  e = quote(obj <- as(as(from, base), type))
@@ -375,12 +375,15 @@ setMethod("createFromXMLConverter",
           function(type, namespaces, defs = NULL, types = list(), allowMissingNodes = FALSE, ...) {
               schemaTypes = types
 
+              if(is(type@type, "SchemaTypeReference"))
+                type@type = resolve(type@type, types)
+
               # What about anonymous/unnamed elements/types.  We need to know the
               # R class name.
               # Attributes, including conversion to numbers, enums, etc.
               # For sequences with an unknown number of elements, have to put them into a list.
               # They won't have names.
-              body = character()
+             body = character()
              if(is(type@type, "ClassDefinition")) {
                elNames = names(type@type@slotTypes)
                types = type@type@slotTypes
@@ -393,7 +396,8 @@ setMethod("createFromXMLConverter",
                                type = if(is.character(type))
                                        schemaTypes[[id]] # lookupDef(id, schemaTypes)  # id or types[[id]]
 
-                               typeName = sQuote(mapSchemaTypeToS(type@name, schemaTypes)) #XXX want the types in this call.
+                                                                # type@name
+                               typeName = sQuote(mapSchemaTypeToS(type, schemaTypes)) #XXX want the types in this call.
                                if(length(type@count)) {
                                           # lapply or sapply ? 
                                  paste("obj@", id, " <- lapply(x[names(x) == ", sQuote(id), "], as, ", typeName, ")", sep = "")
@@ -524,12 +528,14 @@ makeAttributeCode =
   #
 function(attributeDefs, varName = 'obj')
 {
-  for(i in attributeDefs) {
-    e = quote(obj@foo <- xmlGetAttr(node, ""))
-    e[[2]][[1]] = as.name(varName)
-    e[[2]][[3]] = as.name(i@name)
-    e[[3]][[3]] = i@name           
-    
-    body(f)[[length(body(f)) + 1L]] = e
-  }
+  lapply(attributeDefs,
+          function(i) {
+#  for(i in attributeDefs) {
+            e = quote(obj@foo <- xmlGetAttr(node, ""))
+            e[[2]][[1]] = as.name(varName)
+            e[[2]][[3]] = as.name(i@name)
+            e[[3]][[3]] = i@name           
+            e
+ #   body(f)[[length(body(f)) + 1L]] = e
+            })
 }

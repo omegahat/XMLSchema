@@ -7,6 +7,8 @@ list( "1.1" =
        c( 'xsi'="http://www.w3.org/2001/XMLSchema-instance",
           'xsd'="http://www.w3.org/2001/XMLSchema"))
 
+XMLSchemaURI = "http://www.w3.org/XML/1998/namespace"
+
 DefaultFunctionNamespace = getNamespace("XML")
 
 #???  should this be in another package, e.g. XML?

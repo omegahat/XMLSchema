@@ -23,6 +23,25 @@ setGeneric("resolve", function(obj, context, namespaces = character(), recursive
                         if(is(obj, "AnyAttributeDef"))
                           return(obj)
 
+                        if(is(obj, "SchemaTypeReference") && length(obj@nsuri)) {
+                           if(obj@nsuri == "http://www.w3.org/2001/XMLSchema") 
+                              return(switch(obj@name,
+                                            language = new("XMLlanguageType"),
+                                            IDREF= new("XMLIDREFType"),                                     
+                                            IDREFS = new("XMLIDREFSType"),
+                                            unsignedLong = new("unsignedLong"),
+                                      stop("resolving the builtin XML schema type ", obj@name, " not implemented yet")))
+
+                           if(obj@nsuri == XMLSchemaURI) {
+                               return(switch(obj@name,
+                                             space = new("AttributeDef", name = "space", type = new("EnumValuesDef", name = "space", values = c("default", "preserve")), default = ""),
+#                                             lang = ,
+#                                             base = ,
+                                             stop("failed to resolve the ", class(obj), " reference in the XML namespace")))
+                           }
+                        }
+                            
+
                         if(is.null(obj))
                            return(NULL)
                         
@@ -50,11 +69,14 @@ setGeneric("resolve", function(obj, context, namespaces = character(), recursive
 #                             return(get(id, work$resolved))
                           
                           assign(id, obj, work$pending)
-                          on.exit({ if(exists(id, work$pending, inherits = FALSE))
+                          on.exit({  #cat("cleaning up '", id, "'\n");
+                                    if(length(id)) {
+                                      if(exists(id, work$pending, inherits = FALSE))
                                         remove(list = id, envir = work$pending)
-#                                   cat("finished resolving", id, "\n")
-                                   if(!is.null(ans))
-                                      assign(id, ans, work$resolved)
+                                        #                                   cat("finished resolving", id, "\n")
+                                      if(!is.null(ans))
+                                        assign(id, ans, work$resolved)
+                                    }
                                   })
                         }
                        
@@ -134,7 +156,7 @@ setMethod("resolve", c("SchemaTypeReference", "list"),
            })
 
 
-#XXX Remove.Replaced by one directly below.
+#XXX Remove.Replaced by one below.
 setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL,
                              type = NULL, depth = 1L, work = NULL, ...) {
@@ -172,7 +194,7 @@ setMethod("resolve", c("AttributeGroup", "SchemaCollection"),
 
 setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
-
+if(obj@name == "space") browser()
              if(!is.null(xrefInfo) && !is.null(xrefInfo$crossRefNames) &&
                     length(xrefInfo$crossRefNames) &&  length(obj@nsuri) && 
                       sprintf("%s:%s", obj@nsuri, obj@name) %in%  xrefInfo$crossRefNames) {            
@@ -202,6 +224,8 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
              if(is.na(i)) {
                    if(length(context) == 1 && names(context) == "" && is.na(obj@nsuri))
                       i = 1L
+                   else if(obj@ns == "xml")
+                       return(resolve(obj, context, namespaces, recursive, raiseError, xrefInfo, type, depth = depth, work, ...))
                    else
                       stop("can't find namespace '", obj@nsuri, "' of SchemaTypeReference ", obj@name,
                                 " in context ", paste(names(context), collapse = ", "))
@@ -242,6 +266,13 @@ setMethod("resolve", c("SchemaTypeReference", "SchemaCollection"),
                 ans
            })
 
+
+setMethod("resolve", c("AttributeGroupReference", "SchemaCollection"),
+           function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
+             ans = callNextMethod(obj, context)
+             ans@optional = obj@optional
+             ans
+           })
 
 setMethod("resolve", c("AttributeDef", "list"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL,  ...) {
@@ -402,6 +433,10 @@ setMethod("resolve", c("SimpleSequenceType", "SchemaCollection"),
 
 setMethod("resolve", c("SchemaType", "SchemaCollection"),
            function(obj, context, namespaces = character(), recursive = TRUE, raiseError = TRUE, xrefInfo = NULL, type = NULL, depth = 1L, work = NULL, ...) {
+
+             if(is(obj, "BuiltinXMLSchemaType"))
+               return(obj)
+             
                #XXX deal with the namespace.
                #!!! This will cause infinite recursion if there is no method for the specific type.
                # So now match the namespace....

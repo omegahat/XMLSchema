@@ -44,8 +44,10 @@ function(name, rnode, namespaces = list(), targetNamespace = NA, base = xmlGetAt
          # Should check the ancestry of the type. For this, we need the collection of type descriptions.
      if(base == "string" || isPattern)
         def = createRestrictedStringDefinition(rnode, name, targetNamespace)
-     else
-        def <- new("EnumValuesDef", name = name, values = xmlSApply(rnode,  xmlGetAttr, "value"))
+     else {
+        vals = sapply(rnode[xmlSApply(rnode, inherits, "XMLInternalElementNode")], xmlGetAttr, "value")
+        def <- new("EnumValuesDef", name = name, values = vals)
+     }
      if(length(name) == 0)  #XXX
               def@name = paste(def@values, collapse = ",")
    }
