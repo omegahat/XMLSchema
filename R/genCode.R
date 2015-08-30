@@ -104,7 +104,10 @@ setMethod("computeName", "SimpleSequenceType",
 
 setMethod("computeName", "SchemaType",
             function(type, ...) {
-              type@name
+              if(length(type@name) == 0 || is.na(type@name) || type@name == "")
+                getNameFromAncestors(type@srcNode)
+              else
+                type@name
         })
 
 setMethod("computeName", "Element",
@@ -123,18 +126,50 @@ setMethod("computeName", "ClassDefinition",
                 type@name
         })
 
+
+
+getNameFromAncestors =
+  #
+  # Attempt to compute the name by looking at the ancestors.
+  #  Add 1
+  #
+function(node, suffix = ".anon")
+{
+  ctr = 0L
+  while(!is.null(node)) {
+    id = xmlGetAttr(node, "name")
+    if(!is.null(id))
+      return(sprintf("%s%s%s", id, suffix, if(ctr > 1) as.character(ctr) else ""))
+    node = xmlParent(node)
+    ctr = ctr + 1
+  }
+  return(character())
+}
+
+
 if(FALSE)
 setMethod("computeName", "NULL",
             function(type, ...) {
                "" # or NA or character()
              })
 
+
+findNameXML =
+function(node)
+{
+  name = ""
+  while(!is.null(node <- xmlParent(node)) && name == "") {
+     name = xmlGetAttr(node, "name", "")
+  }
+  name
+}
+
 getName =
 function(i, compute = FALSE)
 {
     # e.g. GetDatabases in MassSpecAPI is an empty element so type is NULL
   ans = if(is(i, "Element") && length(i@type))  {
-           if(length(i@type@Rname)) i@type@Rname else i@type@name
+           if(length(i@type@Rname)) i@type@Rname else if(length(i@type@name)) i@type@name else i@name
         } else if (is(i, "AttributeDef")) { 
            i@type@name
         } else if(is(i, "GenericSchemaType") || is(i, "XMLSchemaComponent")) {
@@ -144,7 +179,7 @@ function(i, compute = FALSE)
        else 
           i$name
 
-  if(is.na(ans) && compute)
+  if((is.na(ans) || ans == "") && compute)
     computeName(i)
   else
     ans
@@ -185,7 +220,7 @@ function(i, where = globalenv(),
       return(FALSE)
 
 #    if(is(i, "SchemaTypeReference"))
-       i = resolve(i, types, namespaceDefs, recursive = TRUE, xrefInfo = types@circularDefs, type = notElementFun)    
+    i = resolve(i, types, namespaceDefs, recursive = TRUE, xrefInfo = types@circularDefs, type = notElementFun)    
     
     if(is(i, "SchemaTypes"))
      return(standardGeneric("defClass"))
@@ -196,6 +231,9 @@ function(i, where = globalenv(),
 
     if(length(name) == 0 || is.na(name) || name == "")
       name = computeName(i)
+
+    if(name == "")
+      stop("Cannot find the name for this type")
 
 #if(name %in%c("uType", "iType", "bType")) browser()
   
@@ -240,7 +278,7 @@ function(i, where = globalenv(),
                cvt = as(type@fromConverter, "AsFunction")
            else
                cvt = type@fromConverter
-           setAs("XMLAbstractNode", type@name, cvt, where = where)
+           setAs("XMLAbstractNode", name, cvt, where = where)
          }
       }         
 
@@ -325,8 +363,6 @@ setMethod("defClass", "ANY",
 if(showDefClassTrace)
   print(sys.calls())
 
-
- 
          if(is(i, "XMLAbstractNode") || is.null(i)) {
            return(NA)
          }
@@ -348,14 +384,7 @@ if(showDefClassTrace)
 
          if(is(i, "RestrictedStringDefinition")) {
 
-            valid = function(object) {
-               values = ""
-               if(any(i <- !is.na(object)) && !any(object[i] == values))
-                  paste("some values are not a recognized value in ", paste(sQuote(values), collapse = ', '))
-               else
-                  TRUE
-            }
-            body(valid)[[2]][[3]] = i@values
+            valid = createValidityFunction(i)
             def = setClass(name, contains = "string", validity = valid, where = where)
 
             if(defineEnumVars) 
@@ -368,7 +397,7 @@ if(showDefClassTrace)
            def = setClass(name, "integer", where = where)
              # coercion method.
            fun = function(from)
-                     XMLSchema::asIntegerSetValue(from, 'a', 'b')
+                    asIntegerSetValue(from, 'a', 'b')
            body(fun)[[3]] = i@values # a
            body(fun)[[4]] = name    # b
            environment(fun) = globalenv()
@@ -423,7 +452,10 @@ if(showDefClassTrace)
               cat("defining", i@name, " (temporary solution)\n")
            setClass(i@name, where = where)
            return()
-         }  else if(is(i, "UnionDefinition")) {
+         } else if(is(i, "StringTypeUnionDefinition")) {
+            defStringUnionClass(i, types, nsURI = i@uris, name = name, where, verbose = verbose, force = force,
+                            classes = classes, pending = pending, baseClass = baseClass, opts = opts, namespaceDefs = namespaceDefs)
+         } else if(is(i, "UnionDefinition")) {
             defUnionClass(i, types, nsURI = i@uris, name = name, where, verbose = verbose, force = force,
                             classes = classes, pending = pending, baseClass = baseClass, opts = opts, namespaceDefs = namespaceDefs)
          } else if(is(i, "SimpleElement")) {
@@ -569,16 +601,7 @@ setMethod("defClass", "RestrictedStringPatternDefinition",
         def
      })
 
-makeRestrictedPatternStringValidity =
-function(pattern, name)
-{
-  function(object) {
-     if(grepl(pattern, object))
-        TRUE
-     else
-       sprintf("%s doesn't match pattern %s for class %s", object, pattern, name)
-  }
-}
+
 
 setClass("SchemaElementConverter", contains = "function")
 setClass("AsFunction", contains = "function")
@@ -597,6 +620,7 @@ setAs("SchemaElementConverter", "AsFunction",
 setGeneric("getDefaultValue",
                 function(type, ...)
                   standardGeneric("getDefaultValue"))
+
 setMethod("getDefaultValue", "ANY",
 function(type, ...)
 {
@@ -633,7 +657,7 @@ defineClassDefinition =
 function(i, types, namespaceDefs, name, classes, pending, baseClass, where = globalenv(),
           verbose = FALSE, force = FALSE, extendList = FALSE, opts = new("CodeGenOpts"))
 {
-orig = i
+     orig = i
 #if(i@name %in% 'Classification') browser()
 
   # check if cross reference type
@@ -680,7 +704,7 @@ orig = i
        return(def)
 
      } else {
-  
+       
                  # make certain the types for the fields are defined
             repn = createClassRepresentation(i, types, namespaceDefs)
             classDefs = forceClassDefs(repn, i@slotTypes, types, namespaceDefs, where, classes = classes,
@@ -709,25 +733,40 @@ orig = i
 
      baseClass = c(baseClass, extraBaseClasses)
 
-       if(verbose)
-                cat("defining class", name, "\n")
+     if(verbose)
+       cat("defining class", name, "\n")
 
-       if(extendList) 
-            baseClass = unique(c("list", baseClass))
+     if(extendList) 
+       baseClass = unique(c("list", baseClass))
+     
 #XXXrepn
 #if(name %in% c("ObjectType", "FeatureType", "NetworkLinkType")) browser()
        prot = if(opts@makePrototype) makePrototype(repn, i@slotTypes, baseClass, i@name, defaultValues) else NULL
-def <- tryCatch( setClass(name, representation = c(repn, baseClass), where = where, prototype = prot),
+       def <- tryCatch( setClass(name, representation = c(repn, baseClass), where = where, prototype = prot),
                   error = function(e) {
                        prot = if(opts@makePrototype) makePrototype(repn, i@slotTypes, "list", i@name, defaultValues) else NULL
                        setClass(name, representation = c(repn, baseClass), where = where, prototype = prot)
                     })
 #       def = setClass(name, representation = repn, where = where, contains = baseClass, prototype = prot)
 
+
+     # Create a constructor function for this class. Currently this is
+     # just the generic version. We can construct the more specific
+     # version where we know the target types of each argument and we can
+     # specify the names of the formals and default values.
+     #XXX make specialized.
+       constructor = function(...)
+                        genericConstructor(..., .class = what)
+       body(constructor)[[3]] = name
+       environment(constructor) = globalenv() # should be environment corresponding to where
+       assign(name, constructor, where)
+        
+     
        if(is(i, "CompositeTypeDefinition"))
              createListCoercion(name, repn, where = where)
             
-        def
+       #def
+      constructor
 }
 
 
@@ -838,7 +877,6 @@ function(type, types = NULL, nsURI = rep(NA, length(type)),
            classes = list(), pending = new.env(hash = TRUE, emptyenv()), baseClass = BaseClassName,
             opts = new("CodeGenOpts"), namespaceDefs = list())
 {
-
 #if(name == "any-referenceType"  ) browser()
 
       # Loop over the types and get the names of the corresponding R classes
@@ -849,9 +887,20 @@ function(type, types = NULL, nsURI = rep(NA, length(type)),
 # It would be convenient to have an additional argument passed through to 
 # all the  functions as we define classes that map the name to the
 # R name and then we could just look that up.
-# Some types will be anonymous and so not be in the already defined.  
+# Some types will be anonymous and so not be in the map already defined.  
    #elTypes = mapply(getRClassName, slotTypes)
    elTypes = mapply(mapSchemaTypeToS, slotTypes, MoreArgs = list(types = types) )
+
+    # try to see if we can represent these different types with a single type in R
+    # Do this generally for any RestrictedType
+#XXX Generalize to handle collections of restricted numbers, integers, etc.
+  # i.e. each group of homegeneous types by themselves, not mixed.
+   if(all(sapply(slotTypes, is, "RestrictedStringType"))) {
+     fun = makeRestrictedStringValidityFunction(slotTypes)
+     def = setClass(name, contains = "character", validity = fun, where = where)
+     return(def)
+   }
+ 
 
    klasses = forceClassDefs(elTypes, slotTypes, types, namespaceDefs, where, verbose = verbose,
                              force = force, pending = pending, classes = classes, baseClass = baseClass, opts = opts)
@@ -860,16 +909,31 @@ function(type, types = NULL, nsURI = rep(NA, length(type)),
      def =  setClass(name, contains = "list", where = where)
      elTypes = sapply(slotTypes , function(x) mapSchemaTypeToS(x@elType, types = types))
       f = function(object) {
-          XMLSchema:::checkHomogeneousList(object, elTypes)
+                  checkHomogeneousList(object, elTypes)
      }
     setValidity(name, f, where = where)
   } else {
-   def = setClassUnion(name, elTypes, where = where)
-   assign(name, def, classes)
- }
+     def = setClassUnion(name, elTypes, where = where)
+     assign(name, def, classes)
+  }
   
    name
 }
+
+
+defStringUnionClass = 
+function(type, types = NULL, nsURI = rep(NA, length(type)),
+          name = type@name, where = globalenv(), verbose = FALSE, force = FALSE,
+           classes = list(), pending = new.env(hash = TRUE, emptyenv()), baseClass = BaseClassName,
+            opts = new("CodeGenOpts"), namespaceDefs = list())
+
+{
+  slotTypes = lapply(type@slotTypes, resolve, types)
+  fun = makeRestrictedStringValidityFunction(slotTypes)
+  def = setClass(name, contains = "character", where = where, validity = fun)
+  def
+}
+
 
 
 forceClassDefs =
@@ -878,7 +942,7 @@ function(repn, slotTypes, types, namespaceDefs = list(),
           where = globalenv(), verbose = FALSE, force = FALSE, opts = new("CodeGenOpts"))
 {
 
-   m = sapply(repn, function(x)  is.null(getClassDef(x)) )
+   m = sapply(repn, function(x) if(x == "") TRUE else is.null(getClassDef(x)) )
    if(any(m)) {
       if(verbose) 
        cat("Digressing to define", paste(repn[m], collapse = ", ")) # , "for", name, "\n")
@@ -943,7 +1007,7 @@ function(type, types, name = NA, where = globalenv(), parentClass = BaseClassNam
 {
 
 #  name = type$definition@elementType
- if(is.na(name)) {  
+  if(is.na(name)) {  
     name = if(is(type, "GenericSchemaType")) 
                type@name
            else 
@@ -957,12 +1021,23 @@ function(type, types, name = NA, where = globalenv(), parentClass = BaseClassNam
 
   if(is(el, "SchemaTypeReference")) 
      el = type@elType = resolve(el, types)
+  
 
-  elName = if(is(el, "GenericSchemaType")) el@name else el$name
+  elName = if(is(el, "GenericSchemaType")) { if(length(el@Rname))  el@Rname else el@name } else el$name
 
-  defClass(el, where, types = types, verbose = verbose, baseClass = parentClass) 
+  defClass(el, where, types = types, verbose = verbose, baseClass = parentClass)
 
-  builtinClass = "list"
+
+  if(length(type@proxyElementClassName)) {
+     setClass(type@proxyElementClassName, contains = elName, where = where)
+     elName = type@proxyElementClassName
+  }
+  
+  elClass = getClass(elName, where = where)
+
+  i = match(PrimitiveRClassNames, names(elClass@contains))
+#  builtinClass = if(any(!is.na(i))) elClass@className else "list"
+  builtinClass = "list"    # could be an atomic type if the element is atomic, but not if it has extra slots.
   which = NA
 
   if(FALSE && is(el, "Element")) # Shouldn't be 
@@ -991,33 +1066,78 @@ function(type, types, name = NA, where = globalenv(), parentClass = BaseClassNam
         # Use validity below(?).
   ans = setClass(name, contains = builtinClass, where = where)
 
-  
+  createListConstructor(name, elName, isList = !any(!is.na(match(PrimitiveRClassNames, names(getClass(name)@contains)))), where = where)
+  createListOfCoercions(elName, )
 #XXX
 # Merge into 
 #  createFromXMLConverter(, types = types)
-   fun = makeSequenceXMLConverter(builtinClass, elName, type)
-   setAs("XMLAbstractNode", name, fun, where = where)
+  fun = makeSequenceXMLConverter(builtinClass, elName, type)
+  setAs("XMLAbstractNode", name, fun, where = where)
 
-  if(builtinClass %in% RPrimitiveTypes) 
+   #??? will the methods package  create (some of) these for us?
+  if(builtinClass %in% PrimitiveRClassNames) 
      createVectorCoercions(name, builtinClass, where)
 
   if(is(el, "UnionDefinition") || is(el, "ClassDefinition")) {
-     valid = makeListValidityFun(, type@elType@Rname, type@count)
+     valid = makeListValidityFun(, if(length(type@elType@Rname)) type@elType@Rname else type@elType@name, type@count)
      setValidity(name, valid, where = where)
   }
 
   ans
 }
 
-RPrimitiveTypes = c("logical", "integer", "numeric", "character")
+
+createListConstructor =
+function(name, elName, isList, where = globalenv())
+{
+  fun = function(..., .obj = new(.class), .class = "???")  {
+          as(.obj, "list") <- applyFun(list(...), as, "???")
+          .obj
+        }
+
+  formals(fun)$.class = name
+    # chage
+  body(fun)[[2]][[3]][[4]] = elName
+  if(!isList) {
+    body(fun)[[2]][[2]][[3]] = "vector"    
+    body(fun)[[2]][[3]][[1]] = as.name("sapply")
+  }
+
+  
+  assign(name, fun, where)
+}
+
+
+# Is this necessary?
+createListOfCoercions =
+  #  createListOfCoercions("value", "character")
+function(elName, where = globalenv(), env = DefaultFunctionNamespace,
+          targets = PrimitiveRClassNames)
+{
+  base = elName
+  className = sprintf("ListOf%s", elName)
+  f = function(from)
+         new(class, list(as(from, base)))
+  environment(f) = env
+    # set the class symbol
+  body(f)[[2]] = className 
+  body(f)[[3]][[2]][[3]] = base  
+  for(i in setdiff(targets, base)) {
+      setAs(i, className, f, where = where)
+  }
+}
+
+
+
 createVectorCoercions =
-function(className, base, where = globalenv())
+  #  XMLSchema:::createVectorCoercions("value", "character")
+function(className, base, where = globalenv(), env = DefaultFunctionNamespace)
 {
   f = function(from)
          new(class, as(from, base))
-  environment(f) = DefaultFunctionNamespace
+  environment(f) = env
   body(f)[[2]] = className
-  for(i in setdiff(RPrimitiveTypes, base)) {
+  for(i in setdiff(PrimitiveRClassNames, base)) {
       body(f)[[3]][[3]] = i
       setAs(i, className, f, where = where)
   }
@@ -1213,9 +1333,10 @@ function(repn, slots, base = NA, className = NA, defaults = NULL)
         # Indicator for which elements are actually "character".
         # (Missing those that extend character, e.g. "string" or any new types in the schema
         # that are derived from character/string
+        # Now added check on getClassDef()@contains
         
-    str = sapply(repn, function(x) x == "character")
-
+    str = sapply(repn, function(x) x == "character" || "character" %in% names(getClassDef(x)@contains))
+    
         # for each default, determine if it is degenerate, i.e NULL, empty or an NA.
    nas <- sapply(defaults, function(x) is.null(x) || length(x) == 0 || (length(x) == 1 && is.na(x)))
 
@@ -1232,12 +1353,22 @@ function(repn, slots, base = NA, className = NA, defaults = NULL)
            tmp  = list(list())
            tmp[names(values) ] = values
            values = tmp
-       }
+         }
        ans = do.call(prototype, values)
        #ans = prototype(values)
        return(ans)
-    }
-    
+   }
+
+#    if(any(str))
+#      defaults[str] = lapply(defaults[str], as, "character")
+
+      # ignore slots that have NULL as the prototype value.
+      # If we really want a NULL, make it of class AsIs
+    isNull = sapply(defaults, function(x) is.null(x) && !inherits(x, "AsIs"))
+    defaults = mapply(as, defaults[!isNull], repn[!isNull], SIMPLIFY = FALSE)
+
+#Added temporarily - Jul 20 2013 for eml value class    
+    return(do.call(prototype, defaults))
 #XXX added here to skip the part below that turns character() into ""
     return(prototype(defaults))
 
@@ -1370,35 +1501,6 @@ function(i, where = globalenv(),
       def
   })
 
-makeListValidityFun =
-function(i, typeName = i@elType@Rname, count = numeric(0))
-{
-      valid = function(object) {
-                 if(!all(sapply(object, is, elName)))
-                    stop("not all elements are of type ", elName)
-                 else
-                   TRUE
-              }
-      
-      body(valid)[[2]][[2]][[2]][[2]][[4]] = typeName
-      body(valid)[[2]][[3]][[3]] = typeName
-
-      
-      if(length(count) && (count != c(0, Inf))) {
-
-        if(max(count) == Inf)
-           e = substitute(if(length(object) < min) "too few elements" else TRUE, list(min = count[1]))
-        else
-           e = substitute(if(length(object) < min || length(object) > max)
-                                             "incorrect number of elements"
-                                         else
-                                             TRUE, list(min = count[1], max = count[2]))
-
-         body(valid)[[2]][[4]] = e
-      }
-      
-      valid
-}
 
 
 
@@ -1408,6 +1510,9 @@ getSchemaClass =
   #
 function(def, types)
 {
+   if(def@name == "language")
+     return("XMLlanguage")
+   
    class = switch(def@name, schema = "SchemaTypes", "ANY")
    if(class != "ANY")
       getClassDef(class, package = "XMLSchema")
@@ -1489,11 +1594,39 @@ function(x)
 makeSimpleSequence =
 function(type)
 {
-  new("SimpleSequenceType", name = sprintf("ListOf%s", type@name), count = type@count,
-                            elementType = type@name,
-                            elType = type@type)
 
+  ans = new("SimpleSequenceType", name = sprintf("ListOf%s", type@name), count = type@count,
+                                  elementType = type@name,
+                                  elType = type@type) #XXXX was type@type) Jul 21 2013. Keep the LocalElement.
+
+  if(is(type, "LocalElement"))
+    ans@proxyElementClassName = type@name
+  
+  ans
+  
 # new("RestrictedListType", name = sprintf("ListOf%s", type@name), count = type@count,
 #                           elementType = type@name,
 #                           elType = type@type, baseType = "list")  
 }
+
+
+
+
+setGeneric("createValidityFunction", 
+           function(type, ...)
+              standardGeneric("createValidityFunction"))
+  
+setMethod("createValidityFunction", "RestrictedStringType",
+function(type, ...)
+{
+
+  valid = function(object) {
+            values = ""
+            if(any(i <- !is.na(object)) && !any(object[i] == values))
+                paste("some values are not a recognized value in ", paste(sQuote(values), collapse = ', '))
+            else
+                  TRUE
+          }
+  body(valid)[[2]][[3]] = type@values
+  valid
+})
