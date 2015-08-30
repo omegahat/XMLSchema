@@ -3,8 +3,8 @@ setMethod("show", "ClassDefinition",
              cat(getShowMessage(object), "\n")
              tmp = data.frame(name = names(object@slotTypes),
                               Rtype = sapply(object@slotTypes, getName),
-                              min = sapply(object@slotTypes, function(x) if(is(x, "SchemaType")) x@count[1] else NA),
-                              max = sapply(object@slotTypes, function(x) if(is(x, "SchemaType")) x@count[2] else NA),              
+                              min = sapply(object@slotTypes, function(x) if(is(x, "SchemaType") || is(x, "SchemaElement")) x@count[1] else NA),
+                              max = sapply(object@slotTypes, function(x) if(is(x, "SchemaType") || is(x, "SchemaElement")) x@count[2] else NA),              
                               descriptionClass  = sapply(object@slotTypes, class))
              print(tmp)
            })
