@@ -12,7 +12,7 @@ XMLSchemaURI = "http://www.w3.org/XML/1998/namespace"
 DefaultFunctionNamespace = getNamespace("XML")
 
 #???  should this be in another package, e.g. XML?
-setClass("URI", contains = "character")
+#setClass("URI", contains = "character")
 setAs("character", "URI",
         function(from) new("URI", from))
 
