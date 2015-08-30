@@ -10,14 +10,16 @@ function(filename, createConverters = FALSE, verbose = FALSE,
          asNode = is(filename, "XMLInternalNode") && (is(filename, "AsIs") || xmlName(filename) == "schema"),
          checkCircularTypes = TRUE, simplify = FALSE, inline = TRUE, ...)
 {
-  schemaCollector = new.env(); schemaCollector$.targetNamespaces = character()
+  schemaCollector = new.env()
+  schemaCollector$.targetNamespaces = character()
+  
   doc = if(is.character(filename))
-          parseSchemaDoc(filename, namespaces = namespaces, followImports, followIncludes, verbose = verbose, prevSchema = schemaCollector, inline = inline)
+           parseSchemaDoc(filename, namespaces = namespaces, followImports, followIncludes, verbose = verbose, prevSchema = schemaCollector, inline = inline)
         else
-          filename
+           filename
 
   if(inline) 
-    processSchemaDoc(doc, tns, createConverters, verbose, checkCircularTypes = checkCircularTypes, simplify = simplify, asNode = asNode, ...)
+     processSchemaDoc(doc, tns, createConverters, verbose, checkCircularTypes = checkCircularTypes, simplify = simplify, asNode = asNode, ...)
   else {
      docURLs = ls(schemaCollector)
      docs = lapply(docURLs, get, schemaCollector)
