@@ -12,7 +12,7 @@ findTypeLoops =
 function(doc, deps = directDependencies(doc, namespaceDefs, ...), namespaceDefs = NULL, ...)
 {
    if(is.character(doc))
-      doc = XMLSchema:::parseSchemaDoc(doc)
+      doc = parseSchemaDoc(doc)
   
     # Get the names in the form uri:name for both the names of the types being defined
     # and then of their dependencies.
@@ -58,7 +58,7 @@ directDependencies =
   #  For each of these types, put the URI of the namespace in/for which they are defined
   #  so we can uniquely identify them if there are two types with the same name.
   #
-function(doc, namespaces = XMLSchema:::gatherNamespaceDefs(its[[1]]),
+function(doc, namespaces = gatherNamespaceDefs(its[[1]]),
           targetNamespace = xmlGetAttr(xmlRoot(doc), "targetNamespace")) # have to worry about nested schema
 {
    q = "//xs:schema/*[not(local-name() = 'schema') and not(local-name() = 'annotation')] | //wsdl:types/*[not(local-name() = 'schema') and not(local-name() = 'annotation')]"
@@ -69,7 +69,7 @@ function(doc, namespaces = XMLSchema:::gatherNamespaceDefs(its[[1]]),
 #  }
 
    if(is.null(namespaces))
-     namespaces = XMLSchema:::gatherNamespaceDefs(its[[1]])
+     namespaces = gatherNamespaceDefs(its[[1]])
 
    names(its) = sapply(its, xmlGetAttr, "name")
     # end up with a list with each element being a character string containing the names of the elements
@@ -124,7 +124,7 @@ function(node)
    if(length(el) == 1)
      el = c("", el)
    
-   ns = XMLSchema:::gatherNamespaceDefs(node)
+   ns = gatherNamespaceDefs(node)
    i = match(el[1], names(ns))
    if(FALSE && is.na(i)) {
       if(interactive())
