@@ -1,7 +1,9 @@
 library(XMLSchema)
 #sch = readSchema("~/GitWorkingArea/XMLSchema/inst/samples/kml21.xsd")
 sch = readSchema("~/GitWorkingArea/XMLSchema/inst/samples/ogckml22.xsd")
-invisible(defineClasses(sch))
+ # Not working now. ObjectSimpleExtensionGroup is not defined.
+ # That is an element
+invisible(defineClasses(sch))  
 
 
 library(XML)
