@@ -63,6 +63,10 @@ setGeneric("resolve", function(obj, context, namespaces = character(), recursive
                             browser()#XXX
                           }
 
+                          if(id.name %in% names(xrefInfo$types)) 
+                              return(xrefInfo$types[[id.name]])
+
+
                           #XXX Activating this causes an element with a different name to be returned for something with the
                           # same structure, i.e. class & type. e.g. slots in LatLonBoxType in kml21.xsd
 #                          if(exists(id, work$resolved))
