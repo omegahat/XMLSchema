@@ -484,10 +484,34 @@ setMethod("defClass", "CrossRefType",
                    baseClass = BaseClassName,
                    force = FALSE,
                    name = getName(i),
-                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...) {
-            
+                   ignorePending = FALSE, opts = new("CodeGenOpts"), ...)
+          {
+ 
+            def = types[[i@nsuri]][[i@name]]
             setClass(i@name, contains = "CrossRefClass", where = where)
+            union = paste0(i@name, "OrNULL")
+            setClassUnion( union, c(i@name, "NULL"), where = where)
+            def = fixCrossRefType(def, i@name, union)
+            ans = defineClassDefinition(def, types = types, namespaceDefs = namespaceDefs, baseClass = BaseClassName, pending = pending, name = i@name, where = where, verbose = verbose, force = force, opts = opts)
+
+
+            fromXML = createFromXMLConverter(def, namespaceDefs, types = types)
+            setAs("XMLInternalElementNode", union, fromXML, where = where)
+
+            ans
           })
+
+fixCrossRefType =
+    #
+    # This just replaces the definition of slots that have a direct circular dependency
+    # to a class definition that refers to the <Class>OrNULL and this can be used in defineClassDefinition
+    #
+function(def, name, union = paste0(name, "OrNULL"))
+{
+    w = sapply(def@slotTypes, function(x) is(x, "SchemaTypeReference") && x@name == name)
+    def@slotTypes[w] = lapply(def@slotTypes[w], function(x) new('ClassDefinition', name = union))
+    def
+}
 
 setMethod("defClass", "SchemaGroupType",
           function(i, where = globalenv(),
@@ -696,6 +720,7 @@ function(i, types, namespaceDefs, name, classes, pending, baseClass, where = glo
        listType = i@slotTypes[w]
        i@slotTypes = i@slotTypes[!w]
        repn = createClassRepresentation(i, types, namespaceDefs)
+#XXX May need to avoid forcing this due to circular definitions and hence recursion        
        clasDefs = forceClassDefs(repn, i@slotTypes, types, namespaceDefs, where, classes = classes, baseClass = baseClass,
                              pending = pending, verbose = verbose, force = force, opts = opts)
 #XXXrepn
@@ -1189,9 +1214,16 @@ function(node, className, converters = SchemaPrimitiveConverters, type = NULL)
 {
  obj = new(className)
 
- reg = !type@isAttribute
+ classDef = getClassDef(className)
+ 
+ if(!is.null(type))
+     reg = !type@isAttribute
+ else {
+       # This is not right. We may have an optional node.
+   reg = !(names(node)  %in% slotNames(classDef))
+ }
 
- rslotTypes = getClassDef(className)@slots
+ rslotTypes = classDef@slots
  
  for(i in slotNames(className)[reg]) {
    tmp = node[[i]]
@@ -1211,10 +1243,9 @@ function(node, className, converters = SchemaPrimitiveConverters, type = NULL)
  }
 
  if(any(!reg)) {
-    klass = getClassDef(className)
     at = xmlAttrs(node)
     for(i in slotNames(className)[!reg]) {
-      slot(obj, i) = as(at[i], klass@slots[[i]]) # fromXML(at[i], type@slotTypes[[i]]) 
+      slot(obj, i) = as(at[i], classDef@slots[[i]]) # fromXML(at[i], type@slotTypes[[i]]) 
     }
  }
  
