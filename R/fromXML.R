@@ -284,9 +284,12 @@ setMethod("fromXML", c(type="ANY", "ANY", "ANY"), fromXML.default)
 
 setMethod("fromXML", c(type = "CrossRefType"),
             function(node, root = NULL, converters = SchemaPrimitiveConverters, append = TRUE, type = NULL,  multiRefs = list(), namespaces = gatherNamespaceDefs(node)) {
-              if(!is.null(getClassDef(type@name)))
-                  as(node, type@name)
-              else
+              if(!is.null(getClassDef(type@name))) {
+                  if(!is.null(m <- selectMethod("coerce", c(class(node)[1], paste0(type@name, "OrNULL")), optional = TRUE)))
+                      m(node, type)
+                  else
+                      newSOAPClass(node, getClass(type@name), converters = converters, type = type)
+              } else
                   fromXML.default(node, root, converters, append, type, multiRefs, namespaces)
             })
 
