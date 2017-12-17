@@ -23,7 +23,7 @@ setGeneric("resolve", function(obj, context, namespaces = character(), recursive
                         if(is(obj, "AnyAttributeDef"))
                           return(obj)
 
-                        if(is(obj, "SchemaTypeReference") && length(obj@nsuri)) {
+                        if(is(obj, "SchemaTypeReference") && length(obj@nsuri) && !is.na(obj@nsuri)) {
                            if(obj@nsuri == "http://www.w3.org/2001/XMLSchema") 
                               return(switch(obj@name,
                                             language = new("XMLlanguageType"),
@@ -220,7 +220,7 @@ if(obj@name == "space") browser()
 
 
                  # find which context element corresponds to the URI we have in the object.
-             if(length(obj@nsuri))
+             if(length(obj@nsuri) && !is.na(obj@nsuri))
                 i = match(obj@nsuri, names(context))
              else
                 i = which(sapply(context, function(x) obj@name %in% names(x)))[1]
