@@ -1139,11 +1139,13 @@ if(FALSE) {
 optionalDefaultValue =
 function(obj, default = obj@default)
 {
-#XXX
+    #XXX
+    if(is.null(obj))
+       return(default)
 
     # ensure that if the caller specifies a default, that it is of the expected class for obj.
-   if(!missing(default))
-      default = as(default, class(obj@default))
+  if(!missing(default))
+     default = as(default, class(obj@default))
   
   if(is(obj, "SchemaTypeReference"))
     return(default)
@@ -1552,8 +1554,10 @@ function(name, other)
 makeAttributeGroup = 
 function(node, context, namespaceDefs = list(), targetNamespace = NA, ...)
 {
-   ans = new("AttributeGroup", name = xmlGetAttr(node, "name"), nsuri = as(targetNamespace, "character"))
-   ans@attributes = xmlApply(node, processSchemaType, types = context,
+    ans = new("AttributeGroup", name = xmlGetAttr(node, "name"), nsuri = as(targetNamespace, "character"))
+    nodes = xmlChildren(node)
+    nodes = nodes[sapply(nodes, xmlName) != "annotation"]
+    ans@attributes = lapply(nodes, processSchemaType, types = context,
                                      namespaceDefs = namespaceDefs, targetNamespace = targetNamespace, ...)
    ans
 }

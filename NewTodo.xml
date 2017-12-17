@@ -9,6 +9,24 @@
        "open -a /Applications/Google\ Chrome.app Todo.xml - -args - -allow-file-access-from-files" 
   You have to join the "- -" into -\-. They are here in a comment  -->
 
+
+
+<item status="fixed">
+Resolve with NA values for nsuri.  They should have a namespace.
+See Vessela's example, specifically resolving Organization to typeOrganization.
+<r:code>
+library(XMLSchema)
+s = readSchema("submission.xsd")
+org = s[[1]]$Submission@type@slotTypes$Description@type@slotTypes$Organization
+resolve(org@type, s)
+</r:code>
+</item>
+
+<item status="fixed">
+In an AttributeGroup (see submission.xsd and specifically attributesFileGroup),
+the annotation/documentation is included as an attribute.
+</item>
+
 <item status="done">
 Does integer map to numeric?  See egquery_number.xsd. Should be int, not integer.
 <r:code>
