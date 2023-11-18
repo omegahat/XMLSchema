@@ -366,7 +366,8 @@ function(type, types, substitutionGroups = NULL, namespaceDefs = list(),
                                                             elementFormDefault = elementFormDefault,
                                                             localElements = TRUE, nsuri = as.character(targetNamespace)),
                             type = new("SchemaVoidType"),
-                            nsuri = targetNamespace))
+                            nsuri = targetNamespace,
+                            srcNode = type))
      
    } else if(names(type)[1] == "complexType" && names(type[[1]]) == "simpleContent") {
       ext = type[[1]][[1]][[1]]
@@ -1095,7 +1096,7 @@ if(FALSE) {
 #             type@slotTypes[[1]]@name = type@slotTypes[[1]]@Rname = name
          }
 
-        obj = new("Element", name = name, type = type, Rname = name)
+        obj = new("Element", name = name, type = type, Rname = name, srcNode = el)
 
         i = xmlSApply(element[[1]], xmlName) == "attribute"
         if(any(i))  {
